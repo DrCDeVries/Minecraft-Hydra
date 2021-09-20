@@ -14,6 +14,14 @@
         },
 
         {
+            "command": "node testminecraft.js",
+            "env": {"DEBUG":"minecrafthydra"},
+            "name": "Debug node test minecraft",
+            "request": "launch",
+            "type": "node-terminal"
+        },
+
+        {
             "type": "pwa-node",
             "request": "launch",
             "name": "Launch Program",

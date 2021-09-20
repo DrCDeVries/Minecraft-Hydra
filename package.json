@@ -28,6 +28,7 @@
     "font-awesome": "^4.6.3",
     "jquery": "^3.4.1",
     "jquery-ui": "^1.12.1",
+    "minecraft-auth": "^1.0.29",
     "moment": "^2.24.0",
     "morgan": "^1.9.1",
     "node-csv-parse": "^1.2.0",
