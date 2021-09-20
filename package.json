@@ -1,0 +1,46 @@
+{
+  "name": "minecrafthydra",
+  "version": "0.0.3",
+  "description": "Minecraft Server website",
+  "main": "server.js",
+  "license": "",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DrCDeVries/Minecraft-Hydra"
+  },
+  "author": {
+    "name": "Connor DeVries",
+    "email": "Connor@digitalexample.com",
+    "url": "https://www.digitalexample.com"
+  },
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "animate.css": "^3.7.2",
+    "body-parser": "^1.19.0",
+    "bootstrap": "^3.3.7",
+    "bootstrap-notify": "^3.1.3",
+    "cookie-parser": "^1.4.4",
+    "debug": "^4.1.1",
+    "express": "^4.17.1",
+    "extend": "^3.0.2",
+    "font-awesome": "^4.6.3",
+    "jquery": "^3.4.1",
+    "jquery-ui": "^1.12.1",
+    "moment": "^2.24.0",
+    "morgan": "^1.9.1",
+    "node-csv-parse": "^1.2.0",
+    "node-promise": "^0.5.14",
+    "nodemailer": "^6.4.10",
+    "os-utils": "^0.0.14",
+    "path": "^0.12.7",
+    "rotating-file-stream": "^1.4.3",
+    "serve-favicon": "^2.5.0",
+    "simple-ssh": "^1.0.0",
+    "socket.io": "^2.2.0",
+    "socket.io-client": "^2.2.0",
+    "ssh-exec": "^2.0.0",
+    "uuid": "^3.2.1"
+  }
+}

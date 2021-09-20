@@ -1,0 +1,103 @@
+﻿<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title>Minecraft Hydra</title>
+
+    <!--<link href="stylesheets/bootstrap.min.css" rel="stylesheet" />
+    <link href="stylesheets/bootstrap-theme.min.css" rel="stylesheet" />-->
+    <link href="/javascript/bootstrap/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="/javascript/bootstrap/css/bootstrap-theme.min.css" rel="stylesheet" />
+    <link href="/javascript/fontawesome/css/font-awesome.min.css" rel="stylesheet" />
+    <link href="/javascript/animate-css/animate.min.css" rel="stylesheet" />
+    <link href="/stylesheets/style.css" rel="stylesheet" />
+    <!--Served up by the socket.io service directly as part of the IO service process-->
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/javascript/jquery/jquery.min.js"></script>
+    <script src="/scripts/app/de/jquery.extensions.js"></script>
+    <script src="/javascript/bootstrap/js/bootstrap.min.js"></script>
+    <script src="/javascript/moment/moment.min.js"></script>
+    <script src="/javascript/bootstrap-notify/bootstrap-notify.min.js"></script>
+
+    
+    <script>
+        $(function () {
+
+            var ioSocket = io.connect();
+            // Create our socket.io object and connect it to express
+            
+            ioSocket.on('Connected', function(message) {
+                console.log('radarMonitorService Connected Data', message);
+                 
+            });
+
+            ioSocket.on('Disconnect', function (message) {
+                console.log('radarMonitorService Disconnect',);
+                
+           });
+
+           ioSocket.on('reconnecting', function (message) {
+               console.log('radarMonitorService reconnecting', message);
+              
+           });
+
+            $(".btnServerStart").on("click",function(){
+                ioSocket.emit("ServerStart",{"name":"Connor"})
+            })
+        })
+                
+    
+    </script>
+</head>
+<body>
+
+
+        
+       
+        
+
+    
+    <div class="container mainContent">
+        <br/> <br/>
+        <div class="row">
+            <div class="pageContent">
+                    <button class="btn btn-primary btnServerStart">Restart</button>
+            </div>    
+        </div>
+    </div>
+    
+
+    <footer class="navbar navbar-fixed-bottom navbar-default footer">
+        <p>Minecraft Hydra</p>                
+    </footer>
+
+    <div class="templates" style="display:none">
+        <div class="menuItemTemplate">
+            <ul>
+                <li class="menuItem">
+                    <a href="#">linkText</a>
+                </li>
+            </ul>
+        </div>
+        <!--<div class="menuItemLoginTemplate">
+            <ul>
+                <li class="menuItem">
+                    <a class="menuItemLogin" href="/login/login.htm?loginType=nms"><span class="glyphicon glyphicon-user"></span>Login</a>
+                </li>
+            </ul>
+        </div>
+        <div class="menuItemLogoutTemplate">
+            <ul>
+                <li class="menuItem">
+                    <a class="menuItemLogin" href="/login/login.htm?logout=true">Logout</a>
+                </li>
+            </ul>
+        </div>-->
+
+    </div>
+
+
+
+</body>
+</html>

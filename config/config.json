@@ -1,0 +1,6 @@
+{
+    "useHttps" : false,
+    "useHttp" : true,
+    "httpsport": 49443,
+    "httpport": 49080  
+}
