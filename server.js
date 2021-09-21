@@ -1,6 +1,6 @@
+const appName = "server"
 const http = require('http');
 const https = require('https');
-const debug = require('debug')('minecrafthydra');
 const path = require('path');
 const extend = require('extend');
 const express = require('express');
@@ -8,46 +8,70 @@ const favicon = require('serve-favicon');
 const cookieParser = require('cookie-parser');
 const packagejson = require('./package.json');
 const version = packagejson.version;
-const uuidv4 = require('uuid/v4');
+const { v4: uuidv4 } = require('uuid');
 const Deferred = require('node-promise').defer;
 const moment = require('moment');
 const fs = require('fs');
 const { exec } = require("child_process");
+const ConfigHandler = require("./configHandler.js");
+const ACMECert = require('./acmeCertificateManager');
+const ACMEHttp01 = require('./acme-http-01-memory.js');
+const OpenSSL = require('./openssl.js');
+const Logger = require("./logger.js");
+const ioServer = require('socket.io');
 
-
-var defaultOptions = {
-    //loaded from the config file
-    //var port = process.env.PORT || 1337;
-    configFilePath : "config/config.json",
-    useHttps : false,
-    useHttp : true,
-    httpsport: 443,
-    httpport: 80
-};
-
-
-//Add a set localDebug=true  to console window to use alternative config file
+var configFileOptions = {
+    "configDirectory": "config",
+    "configFileName": "config.json"
+}
 if (process.env.localDebug === 'true') {
-    defaultOptions.configFilePath = "config/localDebug/config.json"
+    console.log("localDebug is enabled")
+    configFileOptions.configDirectory = "config/localDebug"
 }
 
+var defaultConfig = {
+    //loaded from the config file
+    //var port = process.env.PORT || 1337;
+    "configDirectory": configFileOptions.configDirectory,
+    "adminRoute": "/admin",
+    "useHttps" : false,
+    "useHttp" : true,
+    "httpsport": 443,
+    "httpport": 80,
+    "httpsServerKey": "server.key",
+    "httpsServerCert": "server.cert",
+    "logDirectory": "logs",
+    "microsoftAppID": "00000000-0000-0000-0000-000000000000",
+    "microsoftAppSecret": "00000000-0000-0000-0000-000000000000",
+    "appLogLevels":{
+        "server": {
+            "app":"info",
+            "browser":"info"
+        },
+        "acmeCertificateManager":{"app":"info"}
+    }
+};
 
-var configFileSettings = {};
-try {
-    var strConfig = fs.readFileSync(path.join(__dirname, defaultOptions.configFilePath));
-    configFileSettings = JSON.parse(strConfig);
-} catch (ex) {
-    //This needs to stay Console.log as writetolog will not function as no config
-    try {
-        console.log("error", "Error Reading Config File", ex);
-        //if we Can't read the config its a new config or a broken config so we create it using the defaults
-        fs.writeFileSync(path.join(__dirname, defaultOptions.configFilePath), JSON.stringify(defaultConfig, null, 2));
-    } catch (ex) {
-        console.log("error", "Error Creating New Config File just using defaults", ex);
+var configHandler = new ConfigHandler(configFileOptions, defaultConfig);
+
+var objOptions = configHandler.getConfig();
+
+var appLogHandler = function (logData) {
+    //add to the top of the log
+    privateData.logs.push(logData);
+    if (privateData.logs.length > objOptions.maxLogLength) {
+        privateData.logs.shift();
     }
 }
 
-var objOptions = extend({}, defaultOptions, configFileSettings);
+var appLogger = new Logger({
+    logLevels: objOptions.logLevels,
+    debugUtilName: "minecrafthydra",
+    logName: "minecraft-hydra",
+    logEventHandler: appLogHandler,
+    logFolder: objOptions.logDirectory
+})
+
 
 
 var commonData = {
@@ -86,103 +110,6 @@ var getSocketInfo = function (socket) {
     }
 
     return { ip: ip };
-};
-
-var isObject = function (a) {
-    return (!!a) && (a.constructor === Object);
-};
-
-var isArray = function (a) {
-    return (!!a) && (a.constructor === Array);
-};
-
-var arrayPrint = function (obj) {
-    var retval = '';
-    var i;
-    for (i = 0; i < obj.length; i++) {
-        if (retval.length > 0) {
-            retval = retval + ', ';
-        }
-        retval = retval + objPrint(obj[i]);
-    }
-
-    return retval;
-};
-
-var objPrint = function (obj) {
-    if (obj === null) {
-        return 'null';
-    } else if (obj === undefined) {
-        return 'undefined';
-    }else if (isArray(obj)) {
-            return arrayPrint(obj);
-    } else if (isObject(obj)) {
-        return JSON.stringify(obj);
-    } else {
-        return obj.toString();
-    }
-};
-
-var logLevels = {
-    'quiet': -8, //Show nothing at all; be silent.
-    'panic': 0, //Only show fatal errors which could lead the process to crash, such as an assertion failure.This is not currently used for anything.
-    'fatal': 8, //Only show fatal errors.These are errors after which the process absolutely cannot continue.
-    'error': 16, //Show all errors, including ones which can be recovered from.
-    'warning': 24, //Show all warnings and errors.Any message related to possibly incorrect or unexpected events will be shown.
-    'info': 32, //Show informative messages during processing.This is in addition to warnings and errors.This is the default value.
-    'verbose': 40,  //Same as info, except more verbose.
-    'debug': 48, //Show everything, including debugging information.
-    'trace': 56
-};
-
-
-var writeToLog = function (logLevel) {
-    try {
-        if (shouldLog(logLevel, objOptions.logLevel) === true) {
-            var logData = { timestamp: new Date(), logLevel: logLevel, args: arguments };
-            //add to the top of the 
-            privateData.logs.push(logData);
-
-            if (privateData.logs.length > objOptions.maxLogLength) {
-                privateData.logs.shift();
-            }
-
-            debug(arrayPrint(arguments));
-            //debug(arguments[0], arguments[1]);  // attempt to make a one line log entry
-            //if (objOptions.loglevel === 'trace') {
-            //    console.log(arguments);
-            //}
-        }
-        if (io && privateData.browserSockets) {
-            for (const item of Object.values(privateData.browserSockets)) {
-                if (shouldLog(logLevel, item.logLevel)) {
-                    item.socket.emit("streamerLog", logData);
-                }
-            }
-        }
-    } catch (ex) {
-        debug('error', 'Error WriteToLog', ex);
-    }
-};
-
-var getLogLevel = function (logLevelName) {
-
-    if (logLevels[logLevelName]) {
-        return logLevels[logLevelName];
-    } else {
-        return 100;
-    }
-};
-
-
-
-var shouldLog = function (logLevelName, logLevel) {
-
-    if (getLogLevel(logLevelName) <= getLogLevel(logLevel)) {
-        return true;
-    } else {
-        return false;
-    }
 };
 
 
@@ -229,12 +156,14 @@ routes.get('/*', function (req, res) {
     handlePublicFileRequest(req, res);
 });
 
+routes.get('/login/minecraft'), function(req, res){
+
+}
+
 app.use('/', routes);
 
-const ioServer = require('socket.io');
 var io = null;
-
-io = new ioServer();
+io =  ioServer();
 
 var https_srv = null;
 if (objOptions.useHttps === true) {
@@ -248,7 +177,7 @@ if (objOptions.useHttps === true) {
         httpsOptions.rejectUnauthorized = false;
     }
     https_srv = https.createServer(httpsOptions, app).listen(objOptions.httpsport, function () {
-        writeToLog('info', 'Express server listening on https port ' + objOptions.httpsport);
+        appLogger.log(appName, "app",'info', 'Express server listening on https port ' + objOptions.httpsport);
     });
     io.attach(https_srv);
 }
@@ -256,7 +185,7 @@ if (objOptions.useHttps === true) {
 var http_srv = null;
 if (objOptions.useHttp === true) {
     http_srv = http.createServer(app).listen(objOptions.httpport, function () {
-        writeToLog('info', 'Express server listening on http port ' + objOptions.httpport);
+        appLogger.log(appName, "app", 'info', 'Express server listening on http port ' + objOptions.httpport);
     });
     io.attach(http_srv);
 };
@@ -265,7 +194,7 @@ if (objOptions.useHttp === true) {
 io.on('connection', function (socket) {
 
 
-    writeToLog('trace', 'browser', socket.id, 'Socketio Connection');
+    appLogger.log(appName, "app", 'trace', 'browser', socket.id, 'Socketio Connection');
 
     if (privateData.browserSockets[socket.id] === undefined) {
         privateData.browserSockets[socket.id] = {
@@ -276,29 +205,29 @@ io.on('connection', function (socket) {
     }
 
     socket.on('ping', function (data) {
-        writeToLog('trace', 'browser', socket.id, 'ping');
+        appLogger.log(appName, "app", 'trace', 'browser', socket.id, 'ping');
     });
 
     // disable for port http; force authentication
     socket.on('audiostop', function (data) {
-        writeToLog('debug', 'browser', socket.id, 'audiostop');
+        appLogger.log(appName, "app", 'debug', 'browser', socket.id, 'audiostop');
         audioStop();
     });
 
     
 
     socket.on('ServerStart', function (data) {
-        writeToLog('debug', 'browser', socket.id, 'ServerStart',data);
+        appLogger.log(appName, "app", 'debug', 'browser', socket.id, 'ServerStart',data);
         exec("docker restart minecrafthydra_minecraft", (error, stdout, stderr) => {
             if (error) {
-                writeToLog('error', `error: ${error.message}`);
+                appLogger.log(appName, "app", 'error', `error: ${error.message}`);
                 return;
             }
             if (stderr) {
-                writeToLog('info',`stderr: ${stderr}`);
+                appLogger.log(appName, "app", 'info',`stderr: ${stderr}`);
                 return;
             }
-            writeToLog('info',`stdout: ${stdout}`);
+            appLogger.log(appName, "app", 'info',`stdout: ${stdout}`);
         });
     });
 
@@ -306,12 +235,12 @@ io.on('connection', function (socket) {
 
     socket.on("disconnect", function () {
         try {
-            writeToLog("info", 'browser', socket.id, "disconnect", getSocketInfo(socket));
+            appLogger.log(appName, "app", "info", 'browser', socket.id, "disconnect", getSocketInfo(socket));
             if (privateData.browserSockets[socket.id]) {
                 delete privateData.browserSockets[socket.id];
             }
         } catch (ex) {
-            writeToLog('error', 'Error socket on', ex);
+            appLogger.log(appName, "app", 'error', 'Error socket on', ex);
         }
     })
 
