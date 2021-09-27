@@ -45,14 +45,6 @@
             $(".btnServerStart").on("click",function(){
                 ioSocket.emit("ServerStart",{"name":"Connor"})
             })
-            $(".btnServerStop").on("click",function(){
-                ioSocket.emit("ServerStop",{"name":"Connor"})
-            })
-            $(".btnServerRestart").on("click",function(){
-                ioSocket.emit("ServerRestart",{"name":"Connor"})
-            })
-
-
         })
                 
     
@@ -67,17 +59,11 @@
 
     
     <div class="container mainContent">
-        <div class="Row">
-                <div class="col-sm-4">
-                        <button height="" width="" class="btn btn-primary btnServerRestart">Restart</button>
-                </div>    
-                <div class="col-sm-4">
-                    <button height="" width="" class="btn btn-primary btnServerStart">Start</button>
+        <br/> <br/>
+        <div class="row">
+            <div class="pageContent">
+                    <button class="btn btn-primary btnServerStart">Restart</button>
             </div>    
-                <div class="col-sm-4">
-                    <button height="" width="" class="btn btn-primary btnServerStop">Stop</button>
-            </div>    
-                                         
         </div>
     </div>
     
