@@ -159,9 +159,13 @@ var getErrorObject = function(error){
 }
 
 var handleError = function (req, res, error) {
+    try{
     let errorData = getErrorObject(error)
-    appLogger.log(appName, "browser",'error', error);
+    appLogger.log(appName, "browser",'error', errorData);
     res.status(errorData.statuscode).json(errorData.error);
+    }catch(ex){
+        appLogger.log(appName, "browser",'error', "handleError", errorData);
+    }
 };
 
 var app = express();
