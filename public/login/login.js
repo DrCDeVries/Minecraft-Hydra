@@ -14,11 +14,13 @@ $(function () {
 
     $('.btnLoginMicrosoft').on("click", function (evt) {
         
-        var myWindow = window.open(MyPath,"login","toolbar=no,status=no,menubar=no,location=center,scrollbars=no,resizable=no,height=500,width=657");
+       var myLoginWindow = window.open("/login/loading.htm","login","toolbar=no,status=no,menubar=no,location=center,scrollbars=no,resizable=no,height=500,width=657");
         $.post({ url: loginMicrosoftEndPoint, data:{loginType:"Microsoft"}}).then(
             function (data) {
                 console.log(data);
-                myWindow.location = data.url;
+                //window.open(data.url,"login","toolbar=no,status=no,menubar=no,location=center,scrollbars=no,resizable=no,height=500,width=657");
+                myLoginWindow.location.href = data.url;
+                // myWindow.location = data.url;
             },
             function (jqXHR, textStatus, errorThrown) {
                 var error = errorThrown;

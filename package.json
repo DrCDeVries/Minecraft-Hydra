@@ -34,7 +34,7 @@
     "jquery": "^3.6.0",
     "minecraft-auth": "^1.0.29",
     "moment": "^2.24.0",
-    "mongodb": "^4.1.2",
+    "mongodb": "^4.1.1",
     "morgan": "^1.9.1",
     "node-csv-parse": "^1.2.0",
     "node-promise": "^0.5.14",

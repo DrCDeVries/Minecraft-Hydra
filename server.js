@@ -205,12 +205,12 @@ var handlePublicFileRequest = function (req, res) {
 
 minecraftAuth.MicrosoftAuth.setup(objOptions.microsoftAppID, objOptions.microsoftAppSecret, objOptions.microsoftRedirectUrl);
 
-app.get('/login/microsoft', function(req, res){
+app.post('/login/microsoft', function(req, res){
     try {
         var url = minecraftAuth.MicrosoftAuth.createUrl();
-        res.redirect(url);
+        //res.redirect(url);
 
-        //res.json({url: url});
+        res.json({url: url});
     } catch (e) {
         handleError(req,res,e);
     }
@@ -317,6 +317,7 @@ app.post('/login/mojang', function(req, res){
                         if(ownsMinecraft){
                             account.getProfile().then(
                                 function(profileResponse){
+                                    
                                     loginResponse(account).then(
                                         function(retval){
                                             res.json(retval);
@@ -371,7 +372,13 @@ var loginResponse = function(account){
                                     expiresOn: refreshToken.expiresOn,
                                     accessTokenExpiresIn: authToken.accessTokenExpiresIn,
                                     access_token: authToken.access_token,
-                                    account: account,
+                                    account: {
+
+                                        type: account.type,
+                                        username: account.username,
+                                        uuid: account.uuid
+
+                                    }
 
                                 }
                                 appLogger.log(appName, "browser", 'debug', retval);
@@ -419,12 +426,22 @@ var upsertAccount = function(account){
                     const query = { uuid: account.uuid };
                     const update = { $set: account};
                     const options = { upsert: true };
+                    // collection.insertOne(account).then(                            
+                    //         function (err, doc) {
+                    //             assert.equal(err, null);
+                    //             client.close();
+                    //             deferred.resolve(account);
+                    //         },
+                    //         function(err){
+                    //             deferred.reject(err);
+                    //         }
+                    //         );
                     collection.updateOne(query, update, options,                            
-                            function (err, doc) {
-                                assert.equal(err, null);
-                                client.close();
-                                deferred.resolve(account);
-                            });
+                        function (err, doc) {
+                            assert.equal(err, null);
+                            client.close();
+                            deferred.resolve(account);
+                        });
                 } else {
                     appLogger.log(appName, "browser", "error", "upsertAccount", { "msg": "Not Able to Open MongoDB Connection", "stack": "" });
                     client.close();
@@ -456,13 +473,14 @@ var upsertAccount = function(account){
                 const db = client.db(objOptions.mongoDbDatabaseName);
                 const collection = db.collection('RefreshToken');
                 if (collection) {
+                    const expireAt = 259200; // 3 * 24 * 60 * 60;  //expire Token in 3 days ie it will get auto deleted by Mongo
                     var data = {
                         account: account,
                         refresh_token: uuidv4(),
-                        expireAt: 259200, // 3 * 24 * 60 * 60;  //expire Token in 3 days ie it will get auto deleted by Mongo
+                        expireAt: expireAt,
                         token_type: "bearer",
-                        expiresIn: data.expireAt,
-                        expiresOn : moment().add( data.expireAt, 'seconds').toISOString()
+                        expiresIn: expireAt,  
+                        expiresOn : moment().add( expireAt, 'seconds').toISOString()
                     }
                     collection.insertOne(data,                            
                             function (err, doc) {
@@ -500,7 +518,7 @@ var createAuthToken = function (refresh_token){
             try {
                 assert.equal(null, err);
                 const db = client.db(objOptions.mongoDbDatabaseName);
-                const collection = db.collection('AuthToken');
+                const collection = db.collection('AccessToken');
                 if (collection) {
                     var data = {};
                     data.access_token = uuidv4();
