@@ -9,7 +9,7 @@ const cookieParser = require('cookie-parser');
 const packagejson = require('./package.json');
 const version = packagejson.version;
 const { v4: uuidv4 } = require('uuid');
-const Deferred = require('node-promise').defer;
+const Defer = require('node-promise').defer;
 const moment = require('moment');
 const fs = require('fs');
 const { exec } = require("child_process");
@@ -191,7 +191,7 @@ var handlePublicFileRequest = function (req, res) {
     if (filePath === "/") {
         filePath = "/index.htm";
     }
-    console.log('handlePublicFileRequest ' + filePath + ' ...');
+    appLogger.log(appName, "browser", "debug", 'handlePublicFileRequest ' + filePath + ' ...');
 
     if (fs.existsSync(path.join(__dirname, 'public',filePath)) === true) {
         res.sendFile(filePath, { root: path.join(__dirname, 'public') });  
@@ -228,7 +228,16 @@ app.get('/login/microsoft/oauth', function(req, res){
                         if(ownsMinecraft){
                             account.getProfile().then(
                                 function(profileResponse){
-                                    appLogger.log(appName, "browser",'debug', profileResponse, account);
+                                    loginResponse(account).then(
+                                        function(retval){
+                                            appLogger.log(appName, "browser",'debug', profileResponse, account);
+                                            res.json(retval);
+                                        },
+                                        function(err){
+                                            handleError(req,res,err);
+                                        }
+                                    ) 
+                                    
                                 },
                                 function(err){
                                     handleError(req,res,err);
@@ -300,8 +309,6 @@ app.get('/login/microsoft/oauth', function(req, res){
 app.post('/login/mojang', function(req, res){
     try {
         var data = req.body;
-        
-        
         let account = new minecraftAuth.MojangAccount();
         account.Login(data.username, data.password).then(
             function(result){
@@ -310,7 +317,14 @@ app.post('/login/mojang', function(req, res){
                         if(ownsMinecraft){
                             account.getProfile().then(
                                 function(profileResponse){
-                                    appLogger.log(appName, "browser",'debug', profileResponse, account);
+                                    loginResponse(account).then(
+                                        function(retval){
+                                            res.json(retval);
+                                        },
+                                        function(err){
+                                            handleError(req,res,err);
+                                        }
+                                    )   
                                 },
                                 function(err){
                                     handleError(req,res,err);
@@ -324,8 +338,6 @@ app.post('/login/mojang', function(req, res){
                         handleError(req,res,err);
                     }
                 );
-                
-                appLogger.log(appName, "browser",'debug', tokenData);
             },
             function(err){
                 handleError(req,res,err);
@@ -341,8 +353,98 @@ app.post('/login/mojang', function(req, res){
     handlePublicFileRequest(req, res);
  });
 
+var loginResponse = function(account){
+    var deferred = Defer();
+    
+    try {
+        upsertAccount(account).then(
+            function(){
+                createRefreshToken(account).then(
+                    function(refreshToken){
+                        createAuthToken(refreshToken.refreshTokenId).then(
+                            function(authToken){
+                                let retval = {
+                                    refresh_token: refreshToken.refresh_token,
+                                    expireAt: refreshToken.expireAt,
+                                    token_type: refreshToken.token_type,
+                                    expiresIn: refreshToken.expiresIn,
+                                    expiresOn: refreshToken.expiresOn,
+                                    accessTokenExpiresIn: authToken.accessTokenExpiresIn,
+                                    access_token: authToken.access_token,
+                                    account: account,
 
- var createRefreshToken = function (data){
+                                }
+                                appLogger.log(appName, "browser", 'debug', retval);
+                                deferred.resolve(retval);
+                            },
+                            function(err){
+                                deferred.reject(err);
+                                
+                            }
+
+                        )
+                    },
+                    function(err){
+                        deferred.reject(err);
+                    }
+                )
+                
+            },
+            function(err){
+                deferred.reject(err);
+            }
+
+        )
+    }catch (ex) {
+        appLogger.log(appName, "browser", 'error', 'loginResponse',  { "msg": ex.message, "stack": ex.stack });
+        deferred.reject({ "code": 500, "msg": "An Error Occured!", "error": ex });
+    }
+    
+    return deferred.promise;   
+}
+
+
+var upsertAccount = function(account){
+    var deferred = Defer();
+    
+    try {
+        const client = new MongoClient(objOptions.mongoDbServerUrl,objOptions.mongoClientOptions);
+        // Use connect method to connect to the Server
+        client.connect(function (err, client) {
+            try {
+                assert.equal(null, err);
+                const db = client.db(objOptions.mongoDbDatabaseName);
+                const collection = db.collection('Account');
+                if (collection) {
+                    const query = { uuid: account.uuid };
+                    const update = { $set: account};
+                    const options = { upsert: true };
+                    collection.updateOne(query, update, options,                            
+                            function (err, doc) {
+                                assert.equal(err, null);
+                                client.close();
+                                deferred.resolve(account);
+                            });
+                } else {
+                    appLogger.log(appName, "browser", "error", "upsertAccount", { "msg": "Not Able to Open MongoDB Connection", "stack": "" });
+                    client.close();
+                    deferred.reject({ "code": 500, "msg": "Not Able to Open MongoDB Connection", "error": "collection is null"});
+                }
+            } catch (ex) {
+                appLogger.log(appName, "browser", "error", "createRefreshToken", { "msg": ex.message, "stack": ex.stack });
+                client.close();
+                deferred.reject({ "code": 500, "msg": ex.message, "error": ex });
+            }
+        });
+    } catch (ex) {
+        appLogger.log(appName, "browser", 'error', 'createRefreshToken',  { "msg": ex.message, "stack": ex.stack });
+        deferred.reject({ "code": 500, "msg": "An Error Occured!", "error": ex });
+    }
+    
+    return deferred.promise;     
+}
+
+ var createRefreshToken = function (account){
     var deferred = Defer();
     
     try {
@@ -354,15 +456,14 @@ app.post('/login/mojang', function(req, res){
                 const db = client.db(objOptions.mongoDbDatabaseName);
                 const collection = db.collection('RefreshToken');
                 if (collection) {
-                    if (data.refresh_token === undefined || data.refresh_token === null){
-                        data.refresh_token = uuidv4();
+                    var data = {
+                        account: account,
+                        refresh_token: uuidv4(),
+                        expireAt: 259200, // 3 * 24 * 60 * 60;  //expire Token in 3 days ie it will get auto deleted by Mongo
+                        token_type: "bearer",
+                        expiresIn: data.expireAt,
+                        expiresOn : moment().add( data.expireAt, 'seconds').toISOString()
                     }
-                    //if (data.expireAt === undefined || data.expireAt === null){
-                    data.expireAt = 259200; // 3 * 24 * 60 * 60;  //expire Token in 3 days ie it will get auto deleted by Mongo
-                    //}
-                    data.token_type = "bearer"
-                    data.expiresIn = data.expireAt; 
-                    data.expiresOn = moment().add( data.expireAt, 'seconds').toISOString();
                     collection.insertOne(data,                            
                             function (err, doc) {
                                 assert.equal(err, null);
@@ -370,18 +471,18 @@ app.post('/login/mojang', function(req, res){
                                 deferred.resolve(data);
                             });
                 } else {
-                    debug("error", "createRefreshToken", { "msg": "Not Able to Open MongoDB Connection", "stack": "" });
+                    appLogger.log(appName, "browser", "error", "createRefreshToken", { "msg": "Not Able to Open MongoDB Connection", "stack": "" });
                     client.close();
                     deferred.reject({ "code": 500, "msg": "Not Able to Open MongoDB Connection", "error": "collection is null"});
                 }
             } catch (ex) {
-                debug("error", "createRefreshToken", { "msg": ex.message, "stack": ex.stack });
+                appLogger.log(appName, "browser", "error", "createRefreshToken", { "msg": ex.message, "stack": ex.stack });
                 client.close();
                 deferred.reject({ "code": 500, "msg": ex.message, "error": ex });
             }
         });
     } catch (ex) {
-        debug('error', 'createRefreshToken',  { "msg": ex.message, "stack": ex.stack });
+        appLogger.log(appName, "browser", 'error', 'createRefreshToken',  { "msg": ex.message, "stack": ex.stack });
         deferred.reject({ "code": 500, "msg": "An Error Occured!", "error": ex });
     }
     
@@ -389,7 +490,7 @@ app.post('/login/mojang', function(req, res){
 }
 
 
-var createAuthToken = function (refreshTokenId){
+var createAuthToken = function (refresh_token){
     var deferred = Defer();
     
     try {
@@ -402,12 +503,12 @@ var createAuthToken = function (refreshTokenId){
                 const collection = db.collection('AuthToken');
                 if (collection) {
                     var data = {};
-                    data.authToken = uuidv4();
+                    data.access_token = uuidv4();
                     //if (data.expireAt === undefined || data.expireAt === null){
                     data.expireAt = 3600; //  60 * 60;  //expire Token in 1 hour ie it will get auto deleted by Mongo
                     //}
-                    data.authTokenExpiresIn = data.expireAt; 
-                    data.refreshToken = refreshToken;
+                    data.accessTokenExpiresIn = data.expireAt; 
+                    data.refresh_token = refresh_token;
                     //data.authTokenExpiresOn = moment().add( data.expireAt, 'seconds').toISOString();
                     collection.insertOne(data,                            
                             function (err, doc) {
@@ -417,18 +518,18 @@ var createAuthToken = function (refreshTokenId){
                                 deferred.resolve(data);
                             });
                 } else {
-                    debug("error", "createRefreshToken", { "msg": "Not Able to Open MongoDB Connection", "stack": "" });
+                    appLogger.log(appName, "browser", "error", "createRefreshToken", { "msg": "Not Able to Open MongoDB Connection", "stack": "" });
                     client.close();
                     deferred.reject({ "code": 500, "msg": "Not Able to Open MongoDB Connection", "error": "collection is null"});
                 }
             } catch (ex) {
-                debug("error", "createRefreshToken", { "msg": ex.message, "stack": ex.stack });
+                appLogger.log(appName, "browser", "error", "createRefreshToken", { "msg": ex.message, "stack": ex.stack });
                 client.close();
                 deferred.reject({ "code": 500, "msg": ex.message, "error": ex });
             }
         });
     } catch (ex) {
-        debug('error', 'createRefreshToken',  { "msg": ex.message, "stack": ex.stack });
+        appLogger.log(appName, "browser", 'error', 'createRefreshToken',  { "msg": ex.message, "stack": ex.stack });
         deferred.reject({ "code": 500, "msg": "An Error Occured!", "error": ex });
     }
     

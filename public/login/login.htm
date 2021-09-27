@@ -23,7 +23,7 @@
 <body>
     <div class="container">
         <div class="row">
-            <div class="col-md-12">
+            <div class="col-sm-12">
                 <div>
                     <header>
                         <div>
@@ -34,51 +34,70 @@
                             </h1>
                         </div>
                     </header>
-                    <div>
-                        <div class="col-sm-6">
-                            <div class="form" >
-                                <div class="form-group">
-                                    <form name="login" onsubmit="return false">
-                                        <div class="form-horizontal">
-                                            <div class="form-group">
-                                                <label for="mojang_login_username" class="form-label">User Name</label>
-                                                <input type="text" id="mojang_login_username" class="form-control" tabindex="1" autofocus="" required="" placeholder="User Name" autocomplete="username" />
-                                            </div>
-                                            <div class="form-group">
-                                                <label for="mojang_login_password" class="form-label">Password</label>
-                                                <input type="password" id="mojang_login_password" class="form-control" tabindex="2" placeholder="Password" autocomplete="current-password" />
-                                            </div>
-                                        </div>
-                                    </form>
-                                    <button class="btn btn-primary btnLoginMojang" tabindex="3">Mojang</button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-sm-6">
-                            <div class="form" >
-                                <div class="form-group">
-                                        <button class="btn btn-primary btnLoginMicrosoft" tabindex="3">Microsoft</button>
-                                        <button class="btn btn-primary btnLoginCracked" tabindex="3">Cracked</button>
-                                </div>
-                            </div>
-                        </div>
-                        <footer>
-                            <div class="row">
-                                <div class="col-xs-12 alignCenter">
-                                    <div>
-                                        <p>
-                                            <a class="orgWebsite"></a> </span> Powered by <a href="https://https://github.com/DrCDeVries/Minecraft-Hydra" target="_blank" rel="noreferrer noopener">Minecraft-Hydra</a>
-                                        </p>
-                                    </div>
-                                    
-                                </div>
-                            </div>
-                        </footer>
-                    </div>
                 </div>
-                
             </div>
         </div>
+        <div class="row">
+            <div class="col-sm-4">
+                <h2>Mojang Account</h2>
+                <div class="form" >
+                    <div class="form-group">
+                        <form name="login" onsubmit="return false">
+                            <div class="form-horizontal">
+                                <div class="form-group">
+                                    <label for="mojang_login_username" class="form-label">User Name</label>
+                                    <input type="text" id="mojang_login_username" class="form-control" tabindex="1" autofocus="" required="" placeholder="User Name" autocomplete="username" />
+                                </div>
+                                <div class="form-group">
+                                    <label for="mojang_login_password" class="form-label">Password</label>
+                                    <input type="password" id="mojang_login_password" class="form-control" tabindex="2" placeholder="Password" autocomplete="current-password" />
+                                </div>
+                            </div>
+                        </form>
+                        <button class="btn btn-primary btnLoginMojang" tabindex="3">Mojang</button>
+                    </div>
+                    <div id="mojang_login_error" class="alert alert-danger" role="alert" style="margin:10px 0;display:none;">
+                        <div id="mojang_login_errormsg" style="text-align: center; font-size: 1.5em;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-4">
+                <h2>Microsoft Account</h2>
+                <div class="form" >
+                    <div class="form-group">
+                            <button class="btn btn-primary btnLoginMicrosoft" tabindex="3">Microsoft</button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-4">
+                <h2>Cracked Account</h2>
+                <div class="form" >
+                    <div class="form-group">
+                        <div class="form-group">
+                            <label for="mojang_login_username" class="form-label">User Name</label>
+                            <input type="text" id="mojang_login_username" class="form-control" tabindex="1" autofocus="" required="" placeholder="User Name" autocomplete="username" />
+                        </div>
+                        <div>
+                            <button class="btn btn-primary btnLoginCracked" tabindex="3">Cracked</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <div class="row">
+                <div class="col-xs-12 alignCenter">
+                    <div>
+                        <p>
+                            <a class="orgWebsite"></a> </span> Powered by <a href="https://https://github.com/DrCDeVries/Minecraft-Hydra" target="_blank" rel="noreferrer noopener">Minecraft-Hydra</a>
+                        </p>
+                    </div>
+                    
+                </div>
+            </div>
+        </footer>
+        
     </div>
 
    

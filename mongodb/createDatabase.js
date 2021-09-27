@@ -1,4 +1,4 @@
-use uisptools
+use minecrafthydra
 db.createUser(
 {
    user:"Minecraft-Hydra",
@@ -7,6 +7,12 @@ db.createUser(
 }
 )
 
+db.createCollection( "Account",
+   {     
+     autoIndexId: true
+   }
+)
+db.Account.createIndex( { "uuid": 1 } )
 
 db.createCollection( "RefreshToken",
    {     
@@ -16,9 +22,9 @@ db.createCollection( "RefreshToken",
 
 db.RefreshToken.createIndex( { "expireAt": 1 }, { expireAfterSeconds: 0 } )
 
-db.RefreshToken.createIndex( { "refreshToken": 1 } )
+db.ut_RefreshToken.createIndex( { "refresh_token": 1 } )
 
-db.createCollection( "AuthToken",
+db.createCollection( "AccessToken",
    {     
      autoIndexId: true
    }
@@ -26,7 +32,7 @@ db.createCollection( "AuthToken",
 
 db.AuthToken.createIndex( { "expireAt": 1 }, { expireAfterSeconds: 0 } )
 
-db.AuthToken.createIndex( { "authToken": 1 } )
+db.AuthToken.createIndex( { "access_token": 1 } )
 
 
 db.createCollection( "PageContent",
@@ -38,7 +44,7 @@ db.createCollection( "PageContent",
 
 db.PageContent.createIndex( { "pageContentGuid": 1 } )
 
-db.PageContent.insert(
+db.PageContent.insertMany(
 [
 {
     "_id" : ObjectId("5edea608a7f66bdcd0decba7"),
