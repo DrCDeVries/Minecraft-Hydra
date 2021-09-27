@@ -575,8 +575,8 @@ io.on('connection', function (socket) {
     
 
     socket.on('ServerStart', function (data) {
-        appLogger.log(appName, "app", 'debug', 'browser', socket.id, 'ServerStart',data);
-        exec("docker restart minecrafthydra_minecraft", (error, stdout, stderr) => {
+        writeToLog('debug', 'browser', socket.id, 'ServerStart',data);
+        exec("docker start hydra_minecraft", (error, stdout, stderr) => {
             if (error) {
                 appLogger.log(appName, "app", 'error', `error: ${error.message}`);
                 return;
