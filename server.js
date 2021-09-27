@@ -1,6 +1,6 @@
-const appName = "server"
 const http = require('http');
 const https = require('https');
+const debug = require('debug')('minecrafthydra');
 const path = require('path');
 const extend = require('extend');
 const express = require('express');
@@ -8,74 +8,46 @@ const favicon = require('serve-favicon');
 const cookieParser = require('cookie-parser');
 const packagejson = require('./package.json');
 const version = packagejson.version;
-const { v4: uuidv4 } = require('uuid');
-const Defer = require('node-promise').defer;
+const uuidv4 = require('uuid/v4');
+const Deferred = require('node-promise').defer;
 const moment = require('moment');
 const fs = require('fs');
 const { exec } = require("child_process");
-const ConfigHandler = require("./configHandler.js");
-const ACMECert = require('./acmeCertificateManager');
-const ACMEHttp01 = require('./acme-http-01-memory.js');
-const OpenSSL = require('./openssl.js');
-const Logger = require("./logger.js");
-const ioServer = require('socket.io');
-var minecraftAuth = require("minecraft-auth")
-var MongoClient = require('mongodb').MongoClient;
-const assert = require('assert');
 
 
-var configFileOptions = {
-    "configDirectory": "config",
-    "configFileName": "config.json"
-}
-if (process.env.localDebug === 'true') {
-    console.log("localDebug is enabled")
-    configFileOptions.configDirectory = "config/localDebug"
-}
-
-var defaultConfig = {
+var defaultOptions = {
     //loaded from the config file
     //var port = process.env.PORT || 1337;
-    "configDirectory": configFileOptions.configDirectory,
-    "adminRoute": "/admin",
-    "useHttps" : false,
-    "useHttp" : true,
-    "httpsport": 443,
-    "httpport": 80,
-    "httpsServerKey": "server.key",
-    "httpsServerCert": "server.cert",
-    "logDirectory": "logs",
-    "microsoftAppID": "00000000-0000-0000-0000-000000000000",
-    "microsoftAppSecret": "00000000-0000-0000-0000-000000000000",
-    "appLogLevels":{
-        "server": {
-            "app":"info",
-            "browser":"info"
-        },
-        "acmeCertificateManager":{"app":"info"}
-    }
+    configFilePath : "config/config.json",
+    useHttps : false,
+    useHttp : true,
+    httpsport: 443,
+    httpport: 80
 };
 
-var configHandler = new ConfigHandler(configFileOptions, defaultConfig);
 
-var objOptions = configHandler.getConfig();
+//Add a set localDebug=true  to console window to use alternative config file
+if (process.env.localDebug === 'true') {
+    defaultOptions.configFilePath = "config/localDebug/config.json"
+}
 
-var appLogHandler = function (logData) {
-    //add to the top of the log
-    privateData.logs.push(logData);
-    if (privateData.logs.length > objOptions.maxLogLength) {
-        privateData.logs.shift();
+
+var configFileSettings = {};
+try {
+    var strConfig = fs.readFileSync(path.join(__dirname, defaultOptions.configFilePath));
+    configFileSettings = JSON.parse(strConfig);
+} catch (ex) {
+    //This needs to stay Console.log as writetolog will not function as no config
+    try {
+        console.log("error", "Error Reading Config File", ex);
+        //if we Can't read the config its a new config or a broken config so we create it using the defaults
+        fs.writeFileSync(path.join(__dirname, defaultOptions.configFilePath), JSON.stringify(defaultConfig, null, 2));
+    } catch (ex) {
+        console.log("error", "Error Creating New Config File just using defaults", ex);
     }
 }
 
-var appLogger = new Logger({
-    logLevels: objOptions.logLevels,
-    debugUtilName: "minecrafthydra",
-    logName: "minecraft-hydra",
-    logEventHandler: appLogHandler,
-    logFolder: objOptions.logDirectory
-})
-
+var objOptions = extend({}, defaultOptions, configFileSettings);
 
 
 var commonData = {
@@ -116,57 +88,103 @@ var getSocketInfo = function (socket) {
     return { ip: ip };
 };
 
-var getErrorObject = function(error){
-    //this is used to normolize errors that are raised and returned to the client
-    var errorData = {
-        error : {
-            msg: "An Error Occured!", error: "An Error Occured!", stack: ""
-        },
-        statuscode:500
-    }
-    
-    if (error.msg) {
-        errorData.error.msg = errorData.error.msg + ' ' + error.msg;
-    }
-    if (error.message) {
-        errorData.error.msg = errorData.error.msg + ' ' + error.message;
-    }
-    
-    if (error.error) {
-        if (typeof (error.error) === "string") {
-            errorData.error.error = error.error;
-        } else {
-            if (error.error.msg) {
-                errorData.error.error = error.error.msg;
-            } else if (error.error.message) {
-                errorData.error.error = error.error.message;
-            }
-            if (error.error.stack) {
-                errorData.error.stack = error.error.stack;
-            }
-        }
-    } else if (typeof (error) === "string") {
-        errorData.error.error = error;
-    }
-    
-    
-    if (error.code) {
-        errorData.statuscode = error.code;
-    } else if (error.statuscode) {
-        errorData.statuscode = error.statuscode;
-    }
-    return errorData;
-}
+var isObject = function (a) {
+    return (!!a) && (a.constructor === Object);
+};
 
-var handleError = function (req, res, error) {
-    try{
-    let errorData = getErrorObject(error)
-    appLogger.log(appName, "browser",'error', errorData);
-    res.status(errorData.statuscode).json(errorData.error);
-    }catch(ex){
-        appLogger.log(appName, "browser",'error', "handleError", errorData);
+var isArray = function (a) {
+    return (!!a) && (a.constructor === Array);
+};
+
+var arrayPrint = function (obj) {
+    var retval = '';
+    var i;
+    for (i = 0; i < obj.length; i++) {
+        if (retval.length > 0) {
+            retval = retval + ', ';
+        }
+        retval = retval + objPrint(obj[i]);
+    }
+
+    return retval;
+};
+
+var objPrint = function (obj) {
+    if (obj === null) {
+        return 'null';
+    } else if (obj === undefined) {
+        return 'undefined';
+    }else if (isArray(obj)) {
+            return arrayPrint(obj);
+    } else if (isObject(obj)) {
+        return JSON.stringify(obj);
+    } else {
+        return obj.toString();
     }
 };
+
+var logLevels = {
+    'quiet': -8, //Show nothing at all; be silent.
+    'panic': 0, //Only show fatal errors which could lead the process to crash, such as an assertion failure.This is not currently used for anything.
+    'fatal': 8, //Only show fatal errors.These are errors after which the process absolutely cannot continue.
+    'error': 16, //Show all errors, including ones which can be recovered from.
+    'warning': 24, //Show all warnings and errors.Any message related to possibly incorrect or unexpected events will be shown.
+    'info': 32, //Show informative messages during processing.This is in addition to warnings and errors.This is the default value.
+    'verbose': 40,  //Same as info, except more verbose.
+    'debug': 48, //Show everything, including debugging information.
+    'trace': 56
+};
+
+
+var writeToLog = function (logLevel) {
+    try {
+        if (shouldLog(logLevel, objOptions.logLevel) === true) {
+            var logData = { timestamp: new Date(), logLevel: logLevel, args: arguments };
+            //add to the top of the 
+            privateData.logs.push(logData);
+
+            if (privateData.logs.length > objOptions.maxLogLength) {
+                privateData.logs.shift();
+            }
+
+            debug(arrayPrint(arguments));
+            //debug(arguments[0], arguments[1]);  // attempt to make a one line log entry
+            //if (objOptions.loglevel === 'trace') {
+            //    console.log(arguments);
+            //}
+        }
+        if (io && privateData.browserSockets) {
+            for (const item of Object.values(privateData.browserSockets)) {
+                if (shouldLog(logLevel, item.logLevel)) {
+                    item.socket.emit("streamerLog", logData);
+                }
+            }
+        }
+    } catch (ex) {
+        debug('error', 'Error WriteToLog', ex);
+    }
+};
+
+var getLogLevel = function (logLevelName) {
+
+    if (logLevels[logLevelName]) {
+        return logLevels[logLevelName];
+    } else {
+        return 100;
+    }
+};
+
+
+
+var shouldLog = function (logLevelName, logLevel) {
+
+    if (getLogLevel(logLevelName) <= getLogLevel(logLevel)) {
+        return true;
+    } else {
+        return false;
+    }
+};
+
 
 var app = express();
 
@@ -186,7 +204,7 @@ app.use(favicon(__dirname + '/public/favicon.ico'));
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
-//var routes = express.Router();
+var routes = express.Router();
 
 
 var handlePublicFileRequest = function (req, res) {
@@ -195,7 +213,7 @@ var handlePublicFileRequest = function (req, res) {
     if (filePath === "/") {
         filePath = "/index.htm";
     }
-    appLogger.log(appName, "browser", "debug", 'handlePublicFileRequest ' + filePath + ' ...');
+    console.log('handlePublicFileRequest ' + filePath + ' ...');
 
     if (fs.existsSync(path.join(__dirname, 'public',filePath)) === true) {
         res.sendFile(filePath, { root: path.join(__dirname, 'public') });  
@@ -207,321 +225,16 @@ var handlePublicFileRequest = function (req, res) {
        
 };
 
-minecraftAuth.MicrosoftAuth.setup(objOptions.microsoftAppID, objOptions.microsoftAppSecret, objOptions.microsoftRedirectUrl);
-
-app.post('/login/microsoft', function(req, res){
-    try {
-        var url = minecraftAuth.MicrosoftAuth.createUrl();
-        //res.redirect(url);
-
-        res.json({url: url});
-    } catch (e) {
-        handleError(req,res,e);
-    }
-})
-
-app.get('/login/microsoft/oauth', function(req, res){
-    try {
-
-        let code = req.query.code;
-        let account = new minecraftAuth.MicrosoftAccount();
-        account.authFlow(code).then(
-            function(result){
-                account.checkOwnership().then(
-                    function(ownsMinecraft){
-                        if(ownsMinecraft){
-                            account.getProfile().then(
-                                function(profileResponse){
-                                    loginResponse(account).then(
-                                        function(retval){
-                                            appLogger.log(appName, "browser",'debug', profileResponse, account);
-                                            res.json(retval);
-                                        },
-                                        function(err){
-                                            handleError(req,res,err);
-                                        }
-                                    ) 
-                                    
-                                },
-                                function(err){
-                                    handleError(req,res,err);
-                                }
-                            )
-                        }else{
-                            handleError(req,res,{msg:"User does not have minecraft assinged to Microsoft Account", error: "User does not have minecraft assinged to Microsoft Account" });
-                        }
-                    },
-                    function(err){
-                        handleError(req,res,err);
-                    }
-                );
-            },
-            function(err){
-                handleError(req,res,err);
-            }
-        )
-         
-    } catch (e) {
-        handleError(req,res,e);
-    }
-})
-
-
-
-
-
-app.post('/login/mojang', function(req, res){
-    try {
-        var data = req.body;
-        let account = new minecraftAuth.MojangAccount();
-        account.Login(data.username, data.password).then(
-            function(result){
-                account.checkOwnership().then(
-                    function(ownsMinecraft){
-                        if(ownsMinecraft){
-                            account.getProfile().then(
-                                function(profileResponse){
-                                    
-                                    loginResponse(account).then(
-                                        function(retval){
-                                            res.json(retval);
-                                        },
-                                        function(err){
-                                            handleError(req,res,err);
-                                        }
-                                    )   
-                                },
-                                function(err){
-                                    handleError(req,res,err);
-                                }
-                            )
-                        }else{
-                            handleError(req,res,{msg:"User does not have minecraft assinged to Microsoft Account", error: "User does not have minecraft assinged to Microsoft Account" });
-                        }
-                    },
-                    function(err){
-                        handleError(req,res,err);
-                    }
-                );
-            },
-            function(err){
-                handleError(req,res,err);
-            }
-        )
-         
-    } catch (e) {
-        handleError(req,res,e);
-    }
-})
-
- app.get('/*', function (req, res) {   //Must be Last One Added
+routes.get('/*', function (req, res) {
     handlePublicFileRequest(req, res);
- });
+});
 
-var loginResponse = function(account){
-    var deferred = Defer();
-    
-    try {
-        upsertAccount(account).then(
-            function(){
-                createRefreshToken(account).then(
-                    function(refreshToken){
-                        createAuthToken(refreshToken.refreshTokenId).then(
-                            function(authToken){
-                                let retval = {
-                                    refresh_token: refreshToken.refresh_token,
-                                    expireAt: refreshToken.expireAt,
-                                    token_type: refreshToken.token_type,
-                                    expiresIn: refreshToken.expiresIn,
-                                    expiresOn: refreshToken.expiresOn,
-                                    accessTokenExpiresIn: authToken.accessTokenExpiresIn,
-                                    access_token: authToken.access_token,
-                                    account: {
+app.use('/', routes);
 
-                                        type: account.type,
-                                        username: account.username,
-                                        uuid: account.uuid
-
-                                    }
-
-                                }
-                                appLogger.log(appName, "browser", 'debug', retval);
-                                deferred.resolve(retval);
-                            },
-                            function(err){
-                                deferred.reject(err);
-                                
-                            }
-
-                        )
-                    },
-                    function(err){
-                        deferred.reject(err);
-                    }
-                )
-                
-            },
-            function(err){
-                deferred.reject(err);
-            }
-
-        )
-    }catch (ex) {
-        appLogger.log(appName, "browser", 'error', 'loginResponse',  { "msg": ex.message, "stack": ex.stack });
-        deferred.reject({ "code": 500, "msg": "An Error Occured!", "error": ex });
-    }
-    
-    return deferred.promise;   
-}
-
-
-var upsertAccount = function(account){
-    var deferred = Defer();
-    
-    try {
-        const client = new MongoClient(objOptions.mongoDbServerUrl,objOptions.mongoClientOptions);
-        // Use connect method to connect to the Server
-        client.connect(function (err, client) {
-            try {
-                assert.equal(null, err);
-                const db = client.db(objOptions.mongoDbDatabaseName);
-                const collection = db.collection('Account');
-                if (collection) {
-                    const query = { uuid: account.uuid };
-                    const update = { $set: account};
-                    const options = { upsert: true };
-                    // collection.insertOne(account).then(                            
-                    //         function (err, doc) {
-                    //             assert.equal(err, null);
-                    //             client.close();
-                    //             deferred.resolve(account);
-                    //         },
-                    //         function(err){
-                    //             deferred.reject(err);
-                    //         }
-                    //         );
-                    collection.updateOne(query, update, options,                            
-                        function (err, doc) {
-                            assert.equal(err, null);
-                            client.close();
-                            deferred.resolve(account);
-                        });
-                } else {
-                    appLogger.log(appName, "browser", "error", "upsertAccount", { "msg": "Not Able to Open MongoDB Connection", "stack": "" });
-                    client.close();
-                    deferred.reject({ "code": 500, "msg": "Not Able to Open MongoDB Connection", "error": "collection is null"});
-                }
-            } catch (ex) {
-                appLogger.log(appName, "browser", "error", "createRefreshToken", { "msg": ex.message, "stack": ex.stack });
-                client.close();
-                deferred.reject({ "code": 500, "msg": ex.message, "error": ex });
-            }
-        });
-    } catch (ex) {
-        appLogger.log(appName, "browser", 'error', 'createRefreshToken',  { "msg": ex.message, "stack": ex.stack });
-        deferred.reject({ "code": 500, "msg": "An Error Occured!", "error": ex });
-    }
-    
-    return deferred.promise;     
-}
-
- var createRefreshToken = function (account){
-    var deferred = Defer();
-    
-    try {
-        const client = new MongoClient(objOptions.mongoDbServerUrl,objOptions.mongoClientOptions);
-        // Use connect method to connect to the Server
-        client.connect(function (err, client) {
-            try {
-                assert.equal(null, err);
-                const db = client.db(objOptions.mongoDbDatabaseName);
-                const collection = db.collection('RefreshToken');
-                if (collection) {
-                    const expireAt = 259200; // 3 * 24 * 60 * 60;  //expire Token in 3 days ie it will get auto deleted by Mongo
-                    var data = {
-                        account: account,
-                        refresh_token: uuidv4(),
-                        expireAt: expireAt,
-                        token_type: "bearer",
-                        expiresIn: expireAt,  
-                        expiresOn : moment().add( expireAt, 'seconds').toISOString()
-                    }
-                    collection.insertOne(data,                            
-                            function (err, doc) {
-                                assert.equal(err, null);
-                                client.close();
-                                deferred.resolve(data);
-                            });
-                } else {
-                    appLogger.log(appName, "browser", "error", "createRefreshToken", { "msg": "Not Able to Open MongoDB Connection", "stack": "" });
-                    client.close();
-                    deferred.reject({ "code": 500, "msg": "Not Able to Open MongoDB Connection", "error": "collection is null"});
-                }
-            } catch (ex) {
-                appLogger.log(appName, "browser", "error", "createRefreshToken", { "msg": ex.message, "stack": ex.stack });
-                client.close();
-                deferred.reject({ "code": 500, "msg": ex.message, "error": ex });
-            }
-        });
-    } catch (ex) {
-        appLogger.log(appName, "browser", 'error', 'createRefreshToken',  { "msg": ex.message, "stack": ex.stack });
-        deferred.reject({ "code": 500, "msg": "An Error Occured!", "error": ex });
-    }
-    
-    return deferred.promise;     
-}
-
-
-var createAuthToken = function (refresh_token){
-    var deferred = Defer();
-    
-    try {
-        const client = new MongoClient(objOptions.mongoDbServerUrl,objOptions.mongoClientOptions);
-        // Use connect method to connect to the Server
-        client.connect(function (err, client) {
-            try {
-                assert.equal(null, err);
-                const db = client.db(objOptions.mongoDbDatabaseName);
-                const collection = db.collection('AccessToken');
-                if (collection) {
-                    var data = {};
-                    data.access_token = uuidv4();
-                    //if (data.expireAt === undefined || data.expireAt === null){
-                    data.expireAt = 3600; //  60 * 60;  //expire Token in 1 hour ie it will get auto deleted by Mongo
-                    //}
-                    data.accessTokenExpiresIn = data.expireAt; 
-                    data.refresh_token = refresh_token;
-                    //data.authTokenExpiresOn = moment().add( data.expireAt, 'seconds').toISOString();
-                    collection.insertOne(data,                            
-                            function (err, doc) {
-                                assert.equal(err, null);
-                                
-                                client.close();
-                                deferred.resolve(data);
-                            });
-                } else {
-                    appLogger.log(appName, "browser", "error", "createRefreshToken", { "msg": "Not Able to Open MongoDB Connection", "stack": "" });
-                    client.close();
-                    deferred.reject({ "code": 500, "msg": "Not Able to Open MongoDB Connection", "error": "collection is null"});
-                }
-            } catch (ex) {
-                appLogger.log(appName, "browser", "error", "createRefreshToken", { "msg": ex.message, "stack": ex.stack });
-                client.close();
-                deferred.reject({ "code": 500, "msg": ex.message, "error": ex });
-            }
-        });
-    } catch (ex) {
-        appLogger.log(appName, "browser", 'error', 'createRefreshToken',  { "msg": ex.message, "stack": ex.stack });
-        deferred.reject({ "code": 500, "msg": "An Error Occured!", "error": ex });
-    }
-    
-    return deferred.promise;     
-}
-
-
-
+const ioServer = require('socket.io');
 var io = null;
-io =  ioServer();
+
+io = new ioServer();
 
 var https_srv = null;
 if (objOptions.useHttps === true) {
@@ -535,7 +248,7 @@ if (objOptions.useHttps === true) {
         httpsOptions.rejectUnauthorized = false;
     }
     https_srv = https.createServer(httpsOptions, app).listen(objOptions.httpsport, function () {
-        appLogger.log(appName, "app",'info', 'Express server listening on https port ' + objOptions.httpsport);
+        writeToLog('info', 'Express server listening on https port ' + objOptions.httpsport);
     });
     io.attach(https_srv);
 }
@@ -543,7 +256,7 @@ if (objOptions.useHttps === true) {
 var http_srv = null;
 if (objOptions.useHttp === true) {
     http_srv = http.createServer(app).listen(objOptions.httpport, function () {
-        appLogger.log(appName, "app", 'info', 'Express server listening on http port ' + objOptions.httpport);
+        writeToLog('info', 'Express server listening on http port ' + objOptions.httpport);
     });
     io.attach(http_srv);
 };
@@ -552,7 +265,7 @@ if (objOptions.useHttp === true) {
 io.on('connection', function (socket) {
 
 
-    appLogger.log(appName, "app", 'trace', 'browser', socket.id, 'Socketio Connection');
+    writeToLog('trace', 'browser', socket.id, 'Socketio Connection');
 
     if (privateData.browserSockets[socket.id] === undefined) {
         privateData.browserSockets[socket.id] = {
@@ -563,29 +276,29 @@ io.on('connection', function (socket) {
     }
 
     socket.on('ping', function (data) {
-        appLogger.log(appName, "app", 'trace', 'browser', socket.id, 'ping');
+        writeToLog('trace', 'browser', socket.id, 'ping');
     });
 
     // disable for port http; force authentication
     socket.on('audiostop', function (data) {
-        appLogger.log(appName, "app", 'debug', 'browser', socket.id, 'audiostop');
+        writeToLog('debug', 'browser', socket.id, 'audiostop');
         audioStop();
     });
 
     
 
     socket.on('ServerStart', function (data) {
-        appLogger.log(appName, "app", 'debug', 'browser', socket.id, 'ServerStart',data);
-        exec("docker restart minecrafthydra_minecraft", (error, stdout, stderr) => {
+        writeToLog('debug', 'browser', socket.id, 'ServerStart',data);
+        exec("docker start hydra_minecraft", (error, stdout, stderr) => {
             if (error) {
-                appLogger.log(appName, "app", 'error', `error: ${error.message}`);
+                writeToLog('error', `error: ${error.message}`);
                 return;
             }
             if (stderr) {
-                appLogger.log(appName, "app", 'info',`stderr: ${stderr}`);
+                writeToLog('info',`stderr: ${stderr}`);
                 return;
             }
-            appLogger.log(appName, "app", 'info',`stdout: ${stdout}`);
+            writeToLog('info',`stdout: ${stdout}`);
         });
     });
 
@@ -626,12 +339,12 @@ io.on('connection', function (socket) {
 
     socket.on("disconnect", function () {
         try {
-            appLogger.log(appName, "app", "info", 'browser', socket.id, "disconnect", getSocketInfo(socket));
+            writeToLog("info", 'browser', socket.id, "disconnect", getSocketInfo(socket));
             if (privateData.browserSockets[socket.id]) {
                 delete privateData.browserSockets[socket.id];
             }
         } catch (ex) {
-            appLogger.log(appName, "app", 'error', 'Error socket on', ex);
+            writeToLog('error', 'Error socket on', ex);
         }
     })
 

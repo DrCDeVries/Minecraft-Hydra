@@ -9,33 +9,37 @@ $(function () {
     }
 
     $(".loginError").text('').hide();
-    
-   var loginMicrosoftEndPoint = "/login/microsoft";
+    $.get({ url: "loginData" }).then(
+        function (data) {
 
-    $('.btnLoginMicrosoft').on("click", function (evt) {
-        
-       var myLoginWindow = window.open("/login/loading.htm","login","toolbar=no,status=no,menubar=no,location=center,scrollbars=no,resizable=no,height=500,width=657");
-        $.post({ url: loginMicrosoftEndPoint, data:{loginType:"Microsoft"}}).then(
-            function (data) {
-                console.log(data);
-                //window.open(data.url,"login","toolbar=no,status=no,menubar=no,location=center,scrollbars=no,resizable=no,height=500,width=657");
-                myLoginWindow.location.href = data.url;
-                // myWindow.location = data.url;
-            },
-            function (jqXHR, textStatus, errorThrown) {
-                var error = errorThrown;
-                if (jqXHR.responseJSON && jqXHR.responseJSON.msg) {
-                    error = jqXHR.responseJSON.msg;                    
-                }
-                $(".loginError").text(error).show();
+            let organization = data.organization
+            $(document).prop('title', organization.name + ' - Login');
+            $(".orgName").text(organization.name);
+            let orgAddress = organization.street1;
+            if (organization.street2) {
+                orgAddress = orgAddress + ' ' + organization.street2;
             }
-        )
-    })
+            orgAddress = orgAddress + ' ' + organization.city
+            if (organization.stateCode) {
+                orgAddress = orgAddress + ', ' + organization.stateCode
+            }
+            orgAddress = orgAddress + ' ' + organization.zipCode
+            $(".orgAddress").text(orgAddress);
+            $(".orgEmail").text(organization.email);
+            $(".orgPhone").text(organization.phone);
+            $(".orgWebsite").text(organization.website);
+        },
+        ajaxErrorHandler
 
-    var loginMojangEndPoint = "/login/mojang";
-    $('.btnLoginMojang').on("click", function (evt) {
+    )
+
+   
+
+    $('.btnLogin').on("click", function (evt) {
         $(".loginError").text('').hide();
-        var data = { username: $("#mojang_login_username").val(), password: $("#mojang_login_password").val() };
+        var data = { username: $("#_username").val(), password: $("#_password").val() };
+        var rememberme = true; //$("#_rememberme").prop("checked");
+
         if (data.username === '') {
             $(".loginError").text('Username is required').show();
             return;
@@ -44,9 +48,26 @@ $(function () {
             $(".loginError").text('Passsword is required').show();
             return;
         }
-        $.post({ url: loginMojangEndPoint, data }).then(
-            function (data) {
+        var qs = $.getQueryStringParms();
+        var loginEndpoint;
+        var isNmsLogin;
+        if (qs.loginType && qs.loginType.toLowerCase() === "crm") {
+            loginEndpoint = '/login/loginCms';
+            isNmsLogin = false;
+        } else {
+            loginEndpoint = '/login/loginNms';
+            isNmsLogin = true;
+        }
 
+        $.post({ url: loginEndpoint, data }).then(
+            function (data) {
+                console.log(data);
+                if (isNmsLogin) {
+                    $.unmsdetools.setNmsAuthToken(data["x-auth-token"], rememberme);
+                } else {
+                    //Gees preaty sad they are sending interger ID not Guids so can't use them as auth going to have to build out a login to auth token method
+
+                }
             },
             function (jqXHR, textStatus, errorThrown) {
                 var error = errorThrown;

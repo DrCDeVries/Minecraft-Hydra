@@ -1,1 +1,0 @@
-This is a folder containing windows version of openssl exec to make it easy to test open ssl functionality.
