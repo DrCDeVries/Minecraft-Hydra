@@ -289,7 +289,7 @@ io.on('connection', function (socket) {
 
     socket.on('ServerStart', function (data) {
         writeToLog('debug', 'browser', socket.id, 'ServerStart',data);
-        exec("docker restart minecrafthydra_minecraft", (error, stdout, stderr) => {
+        exec("docker start hydra_minecraft", (error, stdout, stderr) => {
             if (error) {
                 writeToLog('error', `error: ${error.message}`);
                 return;
@@ -301,6 +301,39 @@ io.on('connection', function (socket) {
             writeToLog('info',`stdout: ${stdout}`);
         });
     });
+
+    socket.on('ServerRestart', function (data) {
+        writeToLog('debug', 'browser', socket.id, 'ServerRestart',data);
+        exec("docker restart hydra_minecraft", (error, stdout, stderr) => {
+            if (error) {
+                writeToLog('error', `error: ${error.message}`);
+                return;
+            }
+            if (stderr) {
+                writeToLog('info',`stderr: ${stderr}`);
+                return;
+            }
+            writeToLog('info',`stdout: ${stdout}`);
+        });
+    });
+
+    socket.on('ServerStop', function (data) {
+        writeToLog('debug', 'browser', socket.id, 'ServerStop',data);
+        exec("docker stop hydra_minecraft", (error, stdout, stderr) => {
+            if (error) {
+                writeToLog('error', `error: ${error.message}`);
+                return;
+            }
+            if (stderr) {
+                writeToLog('info',`stderr: ${stderr}`);
+                return;
+            }
+            writeToLog('info',`stdout: ${stdout}`);
+        });
+    });
+
+
+    
 
     
 
