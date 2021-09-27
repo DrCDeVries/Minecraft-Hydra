@@ -258,45 +258,7 @@ app.get('/login/microsoft/oauth', function(req, res){
                 handleError(req,res,err);
             }
         )
-        // account.authFlow(result.code).then(function(result){
-            // minecraftAuth.MicrosoftAuth.getToken(code).then(
-            //     function(refreshToken){
-            //         minecraftAuth.MicrosoftAuth.authXBL(refreshToken.access_token).then(
-            //             function(XBLResponse){
-            //                 minecraftAuth.MicrosoftAuth.authXSTS(XBLResponse.Token).then(
-            //                     function(XSTSResponse){
-            //                         minecraftAuth.MicrosoftAuth.getMinecraftToken(XSTSResponse.Token,XBLResponse.DisplayClaims.xui[0].uhs).then(
-            //                             function(MCTokenResponse){
-            //                                 var tokenData = {
-            //                                     refreshToken: refreshToken,
-            //                                     XBLResponse: XBLResponse,
-            //                                     XSTSResponse: XSTSResponse,
-            //                                     MCTokenResponse: MCTokenResponse
-            //                                 }
-            //                                 appLogger.log(appName, "browser",'debug', tokenData);
-            //                             },
-            //                             function(err){
-            //                                 handleError(req,res,err);
-            //                             }
-            //                         )
-            //                         //we Are four Tokens Deep at this point
-                                    
-            //                     },
-            //                     function(err){
-            //                         handleError(req,res,err);
-            //                     }
-                                
-            //                 )
-            //             },
-            //             function(err){
-            //                 handleError(req,res,err);
-            //             }
-            //         )
-            //     },
-            //     function(err){
-            //         handleError(req,res,err);
-            //     }
-            // )  
+         
     } catch (e) {
         handleError(req,res,e);
     }
