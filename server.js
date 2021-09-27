@@ -251,8 +251,6 @@ app.get('/login/microsoft/oauth', function(req, res){
                         handleError(req,res,err);
                     }
                 );
-                
-                appLogger.log(appName, "browser",'debug', tokenData);
             },
             function(err){
                 handleError(req,res,err);
