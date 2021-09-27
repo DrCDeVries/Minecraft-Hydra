@@ -19,6 +19,10 @@ const ACMEHttp01 = require('./acme-http-01-memory.js');
 const OpenSSL = require('./openssl.js');
 const Logger = require("./logger.js");
 const ioServer = require('socket.io');
+var minecraftAuth = require("minecraft-auth")
+var MongoClient = require('mongodb').MongoClient;
+const assert = require('assert');
+
 
 var configFileOptions = {
     "configDirectory": "config",
@@ -112,6 +116,53 @@ var getSocketInfo = function (socket) {
     return { ip: ip };
 };
 
+var getErrorObject = function(error){
+    //this is used to normolize errors that are raised and returned to the client
+    var errorData = {
+        error : {
+            msg: "An Error Occured!", error: "An Error Occured!", stack: ""
+        },
+        statuscode:500
+    }
+    
+    if (error.msg) {
+        errorData.error.msg = errorData.error.msg + ' ' + error.msg;
+    }
+    if (error.message) {
+        errorData.error.msg = errorData.error.msg + ' ' + error.message;
+    }
+    
+    if (error.error) {
+        if (typeof (error.error) === "string") {
+            errorData.error.error = error.error;
+        } else {
+            if (error.error.msg) {
+                errorData.error.error = error.error.msg;
+            } else if (error.error.message) {
+                errorData.error.error = error.error.message;
+            }
+            if (error.error.stack) {
+                errorData.error.stack = error.error.stack;
+            }
+        }
+    } else if (typeof (error) === "string") {
+        errorData.error.error = error;
+    }
+    
+    
+    if (error.code) {
+        errorData.statuscode = error.code;
+    } else if (error.statuscode) {
+        errorData.statuscode = error.statuscode;
+    }
+    return errorData;
+}
+
+var handleError = function (req, res, error) {
+    let errorData = getErrorObject(error)
+    appLogger.log(appName, "browser",'error', error);
+    res.status(errorData.statuscode).json(errorData.error);
+};
 
 var app = express();
 
@@ -131,7 +182,7 @@ app.use(favicon(__dirname + '/public/favicon.ico'));
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
-var routes = express.Router();
+//var routes = express.Router();
 
 
 var handlePublicFileRequest = function (req, res) {
@@ -152,15 +203,239 @@ var handlePublicFileRequest = function (req, res) {
        
 };
 
-routes.get('/*', function (req, res) {
+minecraftAuth.MicrosoftAuth.setup(objOptions.microsoftAppID, objOptions.microsoftAppSecret, objOptions.microsoftRedirectUrl);
+
+app.get('/login/microsoft', function(req, res){
+    try {
+        var url = minecraftAuth.MicrosoftAuth.createUrl();
+        res.redirect(url);
+
+        //res.json({url: url});
+    } catch (e) {
+        handleError(req,res,e);
+    }
+})
+
+app.get('/login/microsoft/oauth', function(req, res){
+    try {
+
+        let code = req.query.code;
+        let account = new minecraftAuth.MicrosoftAccount();
+        account.authFlow(code).then(
+            function(result){
+                account.checkOwnership().then(
+                    function(ownsMinecraft){
+                        if(ownsMinecraft){
+                            account.getProfile().then(
+                                function(profileResponse){
+                                    appLogger.log(appName, "browser",'debug', profileResponse, account);
+                                },
+                                function(err){
+                                    handleError(req,res,err);
+                                }
+                            )
+                        }else{
+                            handleError(req,res,{msg:"User does not have minecraft assinged to Microsoft Account", error: "User does not have minecraft assinged to Microsoft Account" });
+                        }
+                    },
+                    function(err){
+                        handleError(req,res,err);
+                    }
+                );
+                
+                appLogger.log(appName, "browser",'debug', tokenData);
+            },
+            function(err){
+                handleError(req,res,err);
+            }
+        )
+        // account.authFlow(result.code).then(function(result){
+            // minecraftAuth.MicrosoftAuth.getToken(code).then(
+            //     function(refreshToken){
+            //         minecraftAuth.MicrosoftAuth.authXBL(refreshToken.access_token).then(
+            //             function(XBLResponse){
+            //                 minecraftAuth.MicrosoftAuth.authXSTS(XBLResponse.Token).then(
+            //                     function(XSTSResponse){
+            //                         minecraftAuth.MicrosoftAuth.getMinecraftToken(XSTSResponse.Token,XBLResponse.DisplayClaims.xui[0].uhs).then(
+            //                             function(MCTokenResponse){
+            //                                 var tokenData = {
+            //                                     refreshToken: refreshToken,
+            //                                     XBLResponse: XBLResponse,
+            //                                     XSTSResponse: XSTSResponse,
+            //                                     MCTokenResponse: MCTokenResponse
+            //                                 }
+            //                                 appLogger.log(appName, "browser",'debug', tokenData);
+            //                             },
+            //                             function(err){
+            //                                 handleError(req,res,err);
+            //                             }
+            //                         )
+            //                         //we Are four Tokens Deep at this point
+                                    
+            //                     },
+            //                     function(err){
+            //                         handleError(req,res,err);
+            //                     }
+                                
+            //                 )
+            //             },
+            //             function(err){
+            //                 handleError(req,res,err);
+            //             }
+            //         )
+            //     },
+            //     function(err){
+            //         handleError(req,res,err);
+            //     }
+            // )  
+    } catch (e) {
+        handleError(req,res,e);
+    }
+})
+
+
+
+
+
+app.post('/login/mojang', function(req, res){
+    try {
+        var data = req.body;
+        
+        
+        let account = new minecraftAuth.MojangAccount();
+        account.Login(data.username, data.password).then(
+            function(result){
+                account.checkOwnership().then(
+                    function(ownsMinecraft){
+                        if(ownsMinecraft){
+                            account.getProfile().then(
+                                function(profileResponse){
+                                    appLogger.log(appName, "browser",'debug', profileResponse, account);
+                                },
+                                function(err){
+                                    handleError(req,res,err);
+                                }
+                            )
+                        }else{
+                            handleError(req,res,{msg:"User does not have minecraft assinged to Microsoft Account", error: "User does not have minecraft assinged to Microsoft Account" });
+                        }
+                    },
+                    function(err){
+                        handleError(req,res,err);
+                    }
+                );
+                
+                appLogger.log(appName, "browser",'debug', tokenData);
+            },
+            function(err){
+                handleError(req,res,err);
+            }
+        )
+         
+    } catch (e) {
+        handleError(req,res,e);
+    }
+})
+
+ app.get('/*', function (req, res) {   //Must be Last One Added
     handlePublicFileRequest(req, res);
-});
+ });
 
-routes.get('/login/minecraft'), function(req, res){
 
+ var createRefreshToken = function (data){
+    var deferred = Defer();
+    
+    try {
+        const client = new MongoClient(objOptions.mongoDbServerUrl,objOptions.mongoClientOptions);
+        // Use connect method to connect to the Server
+        client.connect(function (err, client) {
+            try {
+                assert.equal(null, err);
+                const db = client.db(objOptions.mongoDbDatabaseName);
+                const collection = db.collection('RefreshToken');
+                if (collection) {
+                    if (data.refresh_token === undefined || data.refresh_token === null){
+                        data.refresh_token = uuidv4();
+                    }
+                    //if (data.expireAt === undefined || data.expireAt === null){
+                    data.expireAt = 259200; // 3 * 24 * 60 * 60;  //expire Token in 3 days ie it will get auto deleted by Mongo
+                    //}
+                    data.token_type = "bearer"
+                    data.expiresIn = data.expireAt; 
+                    data.expiresOn = moment().add( data.expireAt, 'seconds').toISOString();
+                    collection.insertOne(data,                            
+                            function (err, doc) {
+                                assert.equal(err, null);
+                                client.close();
+                                deferred.resolve(data);
+                            });
+                } else {
+                    debug("error", "createRefreshToken", { "msg": "Not Able to Open MongoDB Connection", "stack": "" });
+                    client.close();
+                    deferred.reject({ "code": 500, "msg": "Not Able to Open MongoDB Connection", "error": "collection is null"});
+                }
+            } catch (ex) {
+                debug("error", "createRefreshToken", { "msg": ex.message, "stack": ex.stack });
+                client.close();
+                deferred.reject({ "code": 500, "msg": ex.message, "error": ex });
+            }
+        });
+    } catch (ex) {
+        debug('error', 'createRefreshToken',  { "msg": ex.message, "stack": ex.stack });
+        deferred.reject({ "code": 500, "msg": "An Error Occured!", "error": ex });
+    }
+    
+    return deferred.promise;     
 }
 
-app.use('/', routes);
+
+var createAuthToken = function (refreshTokenId){
+    var deferred = Defer();
+    
+    try {
+        const client = new MongoClient(objOptions.mongoDbServerUrl,objOptions.mongoClientOptions);
+        // Use connect method to connect to the Server
+        client.connect(function (err, client) {
+            try {
+                assert.equal(null, err);
+                const db = client.db(objOptions.mongoDbDatabaseName);
+                const collection = db.collection('AuthToken');
+                if (collection) {
+                    var data = {};
+                    data.authToken = uuidv4();
+                    //if (data.expireAt === undefined || data.expireAt === null){
+                    data.expireAt = 3600; //  60 * 60;  //expire Token in 1 hour ie it will get auto deleted by Mongo
+                    //}
+                    data.authTokenExpiresIn = data.expireAt; 
+                    data.refreshToken = refreshToken;
+                    //data.authTokenExpiresOn = moment().add( data.expireAt, 'seconds').toISOString();
+                    collection.insertOne(data,                            
+                            function (err, doc) {
+                                assert.equal(err, null);
+                                
+                                client.close();
+                                deferred.resolve(data);
+                            });
+                } else {
+                    debug("error", "createRefreshToken", { "msg": "Not Able to Open MongoDB Connection", "stack": "" });
+                    client.close();
+                    deferred.reject({ "code": 500, "msg": "Not Able to Open MongoDB Connection", "error": "collection is null"});
+                }
+            } catch (ex) {
+                debug("error", "createRefreshToken", { "msg": ex.message, "stack": ex.stack });
+                client.close();
+                deferred.reject({ "code": 500, "msg": ex.message, "error": ex });
+            }
+        });
+    } catch (ex) {
+        debug('error', 'createRefreshToken',  { "msg": ex.message, "stack": ex.stack });
+        deferred.reject({ "code": 500, "msg": "An Error Occured!", "error": ex });
+    }
+    
+    return deferred.promise;     
+}
+
+
 
 var io = null;
 io =  ioServer();
