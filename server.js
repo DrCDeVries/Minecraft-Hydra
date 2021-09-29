@@ -289,7 +289,7 @@ io.on('connection', function (socket) {
 
     socket.on('ServerStart', function (data) {
         writeToLog('debug', 'browser', socket.id, 'ServerStart',data);
-        exec("docker restart minecrafthydra_minecraft", (error, stdout, stderr) => {
+        exec("docker restart hydra_minecraft", (error, stdout, stderr) => {
             if (error) {
                 writeToLog('error', `error: ${error.message}`);
                 return;
