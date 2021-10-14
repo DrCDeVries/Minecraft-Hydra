@@ -2,7 +2,7 @@
 @import url('https://fonts.googleapis.com/css?family=Poppins:200i,400&display=swap');
 
 :root {
-  --color-white: #f3f3f3;
+  --color-white: #ffffff;
   --color-darkblue: #1b1b32;
   --color-darkblue-alpha: rgba(27, 27, 50, 0.8);
   --color-green: #37af65;
@@ -35,10 +35,10 @@ body::before {
   background: var(--color-darkblue);
   background-image: linear-gradient(
       115deg,
-      rgba(58, 58, 158, 0.8),
-      rgba(136, 136, 206, 0.7)
+      rgba(93, 93, 211, 0),
+      rgba(136, 136, 206, 0)
     ),
-    url(https://cdn.freecodecamp.org/testable-projects-fcc/images/survey-form-background.jpeg);
+    url(https://cdn.discordapp.com/attachments/815322676846657537/897758914072961044/server-icon.png);
   background-size: cover;
   background-repeat: no-repeat;
   background-position: center;
@@ -233,52 +233,52 @@ form {
         <p>Which option best describes your current role?</p>
         <select id="dropdown" name="role" class="form-control" required>
           <option disabled selected value>Select current role</option>
-          <option value="student">Student</option>
-          <option value="job">Full Time Job</option>
-          <option value="learner">Full Time Learner</option>
-          <option value="preferNo">Prefer not to say</option>
-          <option value="other">Other</option>
+          <option value="student">Builder</option>
+          <option value="job">Farmer</option>
+          <option value="learner">Redstone</option>
+          <option value="preferNo">Fighter</option>
+          <option value="other">Noob</option>
         </select>
       </div>
   
       <div class="form-group">
-        <p>Would you recommend freeCodeCamp to a friend?</p>
+        <p>Where did you first hear about hydra smp</p>
         <label>
           <input
-            name="user-recommend"
-            value="definitely"
+            name="user-exposer"
+            value="friend"
             type="radio"
             class="input-radio"
             checked
-          />Definitely</label
+          />Friend</label
         >
         <label>
           <input
             name="user-recommend"
-            value="maybe"
+            value="admin"
             type="radio"
             class="input-radio"
-          />Maybe</label
+          />Admin</label
         >
   
         <label
           ><input
             name="user-recommend"
-            value="not-sure"
+            value="online"
             type="radio"
             class="input-radio"
-          />Not sure</label
+          />Online</label
         >
       </div>
   
       <div class="form-group">
         <p>
-          What is your favorite feature of freeCodeCamp?
+          What is some other servers you play on
         </p>
         <select id="most-like" name="mostLike" class="form-control" required>
           <option disabled selected value>Select an option</option>
-          <option value="challenges">Challenges</option>
-          <option value="projects">Projects</option>
+          <option value="challenges">Hypixel</option>
+          <option value="projects">Pvp Legosy</option>
           <option value="community">Community</option>
           <option value="openSource">Open Source</option>
         </select>
