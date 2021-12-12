@@ -302,6 +302,11 @@ io.on('connection', function (socket) {
         });
     });
 
+
+    socket.on('Coreprotect', function (data) {
+      console.log('test') 
+    });
+
     
 
     socket.on("disconnect", function () {

@@ -67,10 +67,16 @@
             $(".btnServerStart").on("click",function(){
                 ioSocket.emit("ServerStart",{"name":"Connor"})
             })
+
+            $(".btnCoreprotect").on("click",function(){
+                ioSocket.emit("Coreprotect",{"name":"Connor"})
+            })
         })
         
         loadPage("home.htm");
     
+        
+
     </script>
 </head>
 <body>
@@ -93,6 +99,12 @@
           </li>
             <li class="nav-item" onclick='loadPage("contact.htm")'></li>
           <span class="btn btn-dark btn_load_screen" call_type="php"> Contact</span>
+        </li>
+        <li class="nav-item" onclick="loadPage('test.htm')">
+          <span class="btn btn-dark btn_load_screen" call_type="php"> Test</span>
+        </li>
+        <li class="nav-item btnCoreprotect" onclick="loadPage('coreprotect.htm')">
+          <span class="btn btn-dark btn_load_screen" call_type="coreprotect"> Coreprotect</span>
         </li>
       </ul>
     </div>
