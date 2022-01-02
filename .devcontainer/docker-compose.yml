@@ -18,6 +18,7 @@ services:
       - mincraft-data:/minecraftdata
     container_name: nodehydra
     environment:
+    # Need to make sure the below Vars are also set in the /mongodb/createDatabase.js script as currently there is no way to read environment vars with out spawning shell scripts
       ME_CONFIG_MONGODB_ADMINUSERNAME: "Minecraft-Hydra"
       ME_CONFIG_MONGODB_ADMINPASSWORD: "MinecraftGood"
       ME_CONFIG_MONGODB_URL: "mongodb://Minecraft-Hydra:MinecraftGood!@mongo:27017/"

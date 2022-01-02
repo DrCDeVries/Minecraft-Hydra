@@ -1,4 +1,5 @@
-use minecrafthydra
+
+use('minecrafthydra');
 db.createUser(
 {
    user:"Minecraft-Hydra",
@@ -7,40 +8,23 @@ db.createUser(
 }
 )
 
-db.createCollection( "Account",
-   {     
-     autoIndexId: true
-   }
-)
+
+db.createCollection( "Account")
 db.Account.createIndex( { "uuid": 1 } )
 
-db.createCollection( "RefreshToken",
-   {     
-     autoIndexId: true
-   }
-)
+db.createCollection( "RefreshToken")
 
 db.RefreshToken.createIndex( { "expireAt": 1 }, { expireAfterSeconds: 0 } )
 
-db.ut_RefreshToken.createIndex( { "refresh_token": 1 } )
+db.RefreshToken.createIndex( { "refresh_token": 1 } )
 
-db.createCollection( "AccessToken",
-   {     
-     autoIndexId: true
-   }
-)
+db.createCollection( "AccessToken")
 
-db.AuthToken.createIndex( { "expireAt": 1 }, { expireAfterSeconds: 0 } )
+db.AccessToken.createIndex( { "expireAt": 1 }, { expireAfterSeconds: 0 } )
 
-db.AuthToken.createIndex( { "access_token": 1 } )
+db.AccessToken.createIndex( { "access_token": 1 } )
 
-
-db.createCollection( "PageContent",
-   {
-     
-     autoIndexId: true
-   }
-)
+db.createCollection( "PageContent")
 
 db.PageContent.createIndex( { "pageContentGuid": 1 } )
 

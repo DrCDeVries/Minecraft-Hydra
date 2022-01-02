@@ -26,7 +26,8 @@
 	//},
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	 "forwardPorts": [49080, 49443, 27017, 80, 443, 25565],
+	// don't add Mongo or Mincraft Ports here else they will get tied to node container not mongo and mincraft container and we will not be able to connect to them using remote mongo tools
+	 "forwardPorts": [49080, 49443],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
 	// "postCreateCommand": "yarn install",
