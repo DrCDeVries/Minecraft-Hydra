@@ -202,6 +202,7 @@ app.use('/javascript/bootstrap-notify', express.static(path.join(__dirname, 'nod
 app.use('/javascript/animate-css', express.static(path.join(__dirname, 'node_modules', 'animate.css')));
 app.use(favicon(__dirname + '/public/favicon.ico'));
 app.use(express.urlencoded({ extended: false }));
+app.use(express.json());
 app.use(cookieParser());
 
 var routes = express.Router();
@@ -224,6 +225,11 @@ var handlePublicFileRequest = function (req, res) {
     }
        
 };
+routes.post('/api/connor', function (req, res) {
+  console.log(req.body)
+res.json({sucsess:true})
+});
+
 
 routes.get('/*', function (req, res) {
     handlePublicFileRequest(req, res);
