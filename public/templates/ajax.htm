@@ -1,0 +1,57 @@
+
+<script>
+  
+  
+  function showError(error){
+    alert(err);
+
+  }
+  
+  
+  $(function(){
+    $(".btnSave").on("click", function(evt){
+      let data = {};
+      data.name =  $("#name").val();
+      $.ajax({
+        url:"/api/connor",
+        type:"POST",
+        data:data,
+        dataType:"json"
+      }).then(
+        function(result){
+          console.log(result);
+        },
+        function(err){
+          showError(err)
+        }
+
+      )
+      xhttp.send();
+    
+    })
+
+  })
+
+
+  
+  </script>
+
+
+
+  <div class="form-group">
+    <label id="name-label" for="name">Name</label>
+    <input
+      type="text"
+      name="name"
+      id="name"
+      class="form-control"
+      placeholder="Enter your name"
+      required
+    />
+</div>
+<div>
+  <button class="btn btn-primary btnSave" >Save</button>
+</div>
+
+
+
