@@ -1,6 +1,7 @@
+const appName = 'minecrafthydra';
 const http = require('http');
 const https = require('https');
-const debug = require('debug')('minecrafthydra');
+//const debug = require('debug')(appName);
 const path = require('path');
 const extend = require('extend');
 const express = require('express');
@@ -8,12 +9,13 @@ const favicon = require('serve-favicon');
 const cookieParser = require('cookie-parser');
 const packagejson = require('./package.json');
 const version = packagejson.version;
-const uuidv4 = require('uuid/v4');
+const { v4: uuidv4 } = require('uuid');
 const Deferred = require('node-promise').defer;
 const moment = require('moment');
 const fs = require('fs');
 const { exec } = require("child_process");
-
+const Logger = require("./logger.js");
+const ioServer = require('socket.io');
 
 var defaultOptions = {
     //loaded from the config file
@@ -25,12 +27,10 @@ var defaultOptions = {
     httpport: 80
 };
 
-
 //Add a set localDebug=true  to console window to use alternative config file
 if (process.env.localDebug === 'true') {
     defaultOptions.configFilePath = "config/localDebug/config.json"
 }
-
 
 var configFileSettings = {};
 try {
@@ -89,9 +89,6 @@ var getSocketInfo = function (socket) {
 };
 
 
-
-
-
 var appLogHandler = function (logData) {
     //add to the top of the log
     privateData.logs.push(logData);
@@ -102,8 +99,8 @@ var appLogHandler = function (logData) {
 
 var appLogger = new Logger({
     logLevels: objOptions.logLevels,
-    debugUtilName: "minecrafthydra",
-    logName: "minecraft-hydra",
+    debugUtilName: appName,
+    logName: appName,
     logEventHandler: appLogHandler,
     logFolder: objOptions.logDirectory
 })
@@ -140,10 +137,14 @@ var handlePublicFileRequest = function (req, res) {
 
     if (fs.existsSync(path.join(__dirname, 'public',filePath)) === true) {
         res.sendFile(filePath, { root: path.join(__dirname, 'public') });  
-    } else {
+    }else if(filePath.endsWith(".js.map") == true) {
+        res.sendStatus(404);
+    }else if (filePath.endsWith(".htm") == true) {
         filePath = "/index.htm";
         res.sendFile(filePath, { root: path.join(__dirname, 'public') });
         //res.sendStatus(404);
+    } else {
+        res.sendStatus(404);
     }
        
 };
@@ -152,17 +153,15 @@ routes.post('/api/connor', function (req, res) {
 res.json({sucsess:true})
 });
 
-
 routes.get('/*', function (req, res) {
     handlePublicFileRequest(req, res);
 });
 
 app.use('/', routes);
 
-const ioServer = require('socket.io');
 var io = null;
 
-io = new ioServer();
+io = ioServer();
 
 var https_srv = null;
 if (objOptions.useHttps === true) {
@@ -176,7 +175,7 @@ if (objOptions.useHttps === true) {
         httpsOptions.rejectUnauthorized = false;
     }
     https_srv = https.createServer(httpsOptions, app).listen(objOptions.httpsport, function () {
-        writeToLog('info', 'Express server listening on https port ' + objOptions.httpsport);
+        appLogger.log(appName, "app", 'info', 'Express server listening on https port ' + objOptions.httpsport);
     });
     io.attach(https_srv);
 }
@@ -184,7 +183,7 @@ if (objOptions.useHttps === true) {
 var http_srv = null;
 if (objOptions.useHttp === true) {
     http_srv = http.createServer(app).listen(objOptions.httpport, function () {
-        writeToLog('info', 'Express server listening on http port ' + objOptions.httpport);
+        appLogger.log(appName, "app", 'info', 'Express server listening on http port ' + objOptions.httpport);
     });
     io.attach(http_srv);
 };
@@ -193,7 +192,7 @@ if (objOptions.useHttp === true) {
 io.on('connection', function (socket) {
 
 
-    writeToLog('trace', 'browser', socket.id, 'Socketio Connection');
+    appLogger.log(appName, "browser", "trace", socket.id, 'Socketio Connection');
 
     if (privateData.browserSockets[socket.id] === undefined) {
         privateData.browserSockets[socket.id] = {
@@ -204,47 +203,39 @@ io.on('connection', function (socket) {
     }
 
     socket.on('ping', function (data) {
-        writeToLog('trace', 'browser', socket.id, 'ping');
-    });
-
-    // disable for port http; force authentication
-    socket.on('audiostop', function (data) {
-        writeToLog('debug', 'browser', socket.id, 'audiostop');
-        audioStop();
-    });
-
-    
+        appLogger.log(appName, "browser", "trace", socket.id, "ping");
+    }); 
 
     socket.on('ServerStart', function (data) {
-        writeToLog('debug', 'browser', socket.id, 'ServerStart',data);
+        appLogger.log(appName, "browser", "debug",  socket.id, 'ServerStart', data);
         exec("docker restart hydra_minecraft", (error, stdout, stderr) => {
             if (error) {
-                writeToLog('error', `error: ${error.message}`);
+                appLogger.log(appName, "app", "error", `error: ${error.message}`);
                 return;
             }
             if (stderr) {
-                writeToLog('info',`stderr: ${stderr}`);
+                appLogger.log(appName, "app", "info", `stderr: ${stderr}`);
                 return;
             }
-            writeToLog('info',`stdout: ${stdout}`);
+            appLogger.log(appName, "app", "info", `stdout: ${stdout}`);
         });
     });
 
 
     socket.on('Coreprotect', function (data) {
-      console.log('test') 
+        appLogger.log(appName, "browser", "info", "Coreprotect test") ;
     });
 
     
 
     socket.on("disconnect", function () {
         try {
-            writeToLog("info", 'browser', socket.id, "disconnect", getSocketInfo(socket));
+            appLogger.log(appName, "browser", "info",  socket.id, "disconnect", getSocketInfo(socket));
             if (privateData.browserSockets[socket.id]) {
                 delete privateData.browserSockets[socket.id];
             }
         } catch (ex) {
-            writeToLog('error', 'Error socket on', ex);
+            appLogger.log(appName, "browser", "error", "Error socket on", ex);
         }
     })
 

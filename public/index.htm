@@ -25,58 +25,14 @@
       <script src="/javascript/bootstrap/js/bootstrap.min.js"></script>
       <script src="/javascript/moment/moment.min.js"></script>
       <script src="/javascript/bootstrap-notify/bootstrap-notify.min.js"></script>
-
-    <style>
-      </style>    
-
+      <script src="/drcd.js"></script>
 
     <script>
-        var loadPage = function(templateFile){
-            $.get("/templates/" + templateFile).then(
-                function(data){
-                    $('.pageContent').empty().html(data);
-                },
-                function(error){
-                    console.error(error);
-                }
-            )
-
-        }
-
-
-        $(function () {
-
-            var ioSocket = io.connect();
-            // Create our socket.io object and connect it to express
-            
-        //     ioSocket.on('Connected', function(message) {
-        //         console.log('radarMonitorService Connected Data', message);
-                 
-        //     });
-
-        //     ioSocket.on('Disconnect', function (message) {
-        //         console.log('radarMonitorService Disconnect',);
-                
-        //    });
-
-        //    ioSocket.on('reconnecting', function (message) {
-        //        console.log('radarMonitorService reconnecting', message);
-              
-        //    });
-
-            $(".btnServerStart").on("click",function(){
-                ioSocket.emit("ServerStart",{"name":"Connor"})
-            })
-
-            $(".btnCoreprotect").on("click",function(){
-                ioSocket.emit("Coreprotect",{"name":"Connor"})
-            })
+        //moved all code to app.js
+        //everything is set in motion by calling init
+        $(function(){
+          $.drcd.init();
         })
-        
-        loadPage("home.htm");
-    
-        
-
     </script>
 </head>
 <body>
@@ -84,32 +40,16 @@
 
     <div class="container-fluid">
       <!-- Links -->
-      <ul class="navbar-nav">
-        <a class="navbar-brand">
-          <img src="favicon.ico" alt="Avatar Logo" style="width:40px;" class="rounded-pill"> 
-        </a>
-        <li class="nav-item" onclick="loadPage('home.htm')">
-          <span class="btn btn-dark btn_load_screen" call_type="home"> Home</span>
-        </li>
-        <li class="nav-item" onclick='loadPage("whitelisting.htm")'>
-          <span class="btn btn-dark btn_load_screen" call_type="whitelisting"> Whitelisiting</span>
-        </li>
-        <li class="nav-item" onclick='loadPage("rules.htm")'>
-            <span class="btn btn-dark btn_load_screen" call_type="rules"> Rules</span>
-          </li>
-            <li class="nav-item" onclick='loadPage("contact.htm")'></li>
-          <span class="btn btn-dark btn_load_screen" call_type="php"> Contact</span>
-        </li>
-        <li class="nav-item" onclick="loadPage('test.htm')">
-          <span class="btn btn-dark btn_load_screen" call_type="php"> Test</span>
-        </li>
-        <li class="nav-item btnCoreprotect" onclick="loadPage('coreprotect.htm')">
-          <span class="btn btn-dark btn_load_screen" call_type="coreprotect"> Coreprotect</span>
-        </li>
-        <li class="nav-item" onclick="loadPage('ajax.htm')">
-          <span class="btn btn-dark btn_load_screen" call_type="ajax"> ajax</span>
-        </li>
-      </ul>
+      
+      <a class="navbar-brand">
+        <img src="favicon.ico" alt="Avatar Logo" style="width:40px;" class="rounded-pill"> 
+      </a>
+      <div class="collapse navbar-collapse">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <!--Polulated from the pages json in app.js-->
+          
+        </ul>
+      </div>
     </div>
   
   </nav>
@@ -134,8 +74,8 @@
     <div class="templates" style="display:none">
         <div class="menuItemTemplate">
             <ul>
-                <li class="menuItem">
-                    <a href="#">linkText</a>
+                <li class="nav-item">
+                  <span class="btn btn-dark btn_load_screen"></span>
                 </li>
             </ul>
         </div> 

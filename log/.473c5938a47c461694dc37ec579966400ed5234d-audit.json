@@ -1,0 +1,24 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "log\\.473c5938a47c461694dc37ec579966400ed5234d-audit.json",
+    "files": [
+        {
+            "date": 1642023959830,
+            "name": "log\\2022-01-12-16-minecrafthydra.log",
+            "hash": "667a9c01487ef75b685fdd400490cbeb"
+        },
+        {
+            "date": 1642024851823,
+            "name": "log\\2022-01-12-17-minecrafthydra.log",
+            "hash": "a40ae2b0644c37b529dbaa9422ce83eb"
+        },
+        {
+            "date": 1642028491020,
+            "name": "log\\2022-01-12-18-minecrafthydra.log",
+            "hash": "268dc4eb33f83b062bbc764b3783005e"
+        }
+    ]
+}
