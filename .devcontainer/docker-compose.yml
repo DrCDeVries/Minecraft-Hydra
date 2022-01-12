@@ -70,7 +70,7 @@ services:
     restart: unless-stopped
     volumes:
       - mongo-data:/data/db
-      - ../mongodb/createDatabase.js:/docker-entrypoint-initdb.d/createDatabase.js:ro
+      - ../mongodb/createDatabase.mongodb:/docker-entrypoint-initdb.d/createDatabase.js:ro
     environment:
       MONGO_INITDB_ROOT_USERNAME: "admin"
       MONGO_INITDB_ROOT_PASSWORD: "R00tUs3r0nly!"
