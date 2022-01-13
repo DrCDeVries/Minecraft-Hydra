@@ -17,7 +17,14 @@
 
         commonData: {
             pages: {
-                home: {templateFile:'home.htm', title:'Home'},
+                home: {templateFile:'home.htm', title:'Home', 
+                onLoad:function(){
+                    $.drcd.slideShowLoad();
+                },
+                onClose:function(){
+                    $.drcd.slideShowUnload();
+                },
+                },
                 whitelisting: {templateFile:'whitelisting.htm', title:'Whitelisting'},
                 rules: {templateFile:'rules.htm', title:'Rules'},
                 contact: {templateFile:'contact.htm', title:'Contact'},
@@ -25,25 +32,57 @@
                 coreprotect: {templateFile:'coreprotect.htm', title:'Core Protect'},
                 ajax: {templateFile:'ajax.htm', title:'Ajax'}
 
+            },
+            slideShow: {
+                currentIndex: 0,
+                images:[
+                    {img:"/images/img1.jpg", title:"Redstone Farms"},
+                    {img:"/images/img2.jpg", title:"Spawn"},
+                    {img:"/images/img3.jpg", title:"Shopping"}
+                ],
+                timer: null
             }
+                
+            
         },
     
-
+        
         loadPage : function(pageIndex){
+
+            if(window.history.state && window.history.state.pageIndex){
+                let lastPageIndex = window.history.state.pageIndex;
+                let page = $.drcd.commonData.pages[lastPageIndex];
+                try{
+                    if (page.onClose !== undefined){
+                        page.onClose();
+                    }
+                 }catch(ex){
+                     console.error("logPage:onClose", lastPageIndex, ex);
+                 }
+            }
 
             let page = $.drcd.commonData.pages[pageIndex];
 
             $.get("/templates/" + page.templateFile).then(
                 function(data){
                     $('.pageContent').empty().html(data);
-                    window.history.pushState({"html":data,"pageTitle":page.title},"", page.templateFile);
+                    window.history.pushState({"pageIndex":pageIndex}, page.title, "/page/" + pageIndex);
+                    try{
+                       if (page.onLoad !== undefined){
+                           page.onLoad();
+                       }
+                    }catch(ex){
+                        console.error("logPage:onLoad", pageIndex, ex);
+                    }
                 },
-                function(error){
-                    console.error(error);
+                function(err){
+                    console.error(err);
                 }
             )
 
         },
+
+        
 
         menuItemClick: function(evt){
             $.drcd.loadPage($(evt.currentTarget).attr("data-pageName"));
@@ -63,6 +102,63 @@
            })
         },
 
+        slideShowLoad: function(){
+            console.log("loadSlideShow");
+            $(".slideshow-container").find(".slideshow-prev").on("click", 
+                function(){
+                    if( $.drcd.commonData.slideShow.timer){
+                        clearTimeout($.drcd.commonData.slideShow.timer)
+                    }
+                    if($.drcd.commonData.slideShow.currentIndex <= 0)    {
+                        $.drcd.commonData.slideShow.currentIndex = $.drcd.commonData.slideShow.images.length - 1;
+                    }else{
+                        $.drcd.commonData.slideShow.currentIndex--;
+                    }
+                    $.drcd.slideShowShowSlide();
+                }
+            );
+            $(".slideshow-container").find(".slideshow-next").on("click", 
+                    function(){
+                        if( $.drcd.commonData.slideShow.timer){
+                            clearTimeout($.drcd.commonData.slideShow.timer)
+                        }
+                        if($.drcd.commonData.slideShow.currentIndex >= $.drcd.commonData.slideShow.images.length - 1)    {
+                            $.drcd.commonData.slideShow.currentIndex = 0;
+                        }else{
+                            $.drcd.commonData.slideShow.currentIndex++;
+                        }
+                        $.drcd.slideShowShowSlide();    
+                    }
+            );
+            $.drcd.commonData.slideShow.currentIndex = 0;
+            $.drcd.slideShowShowSlide();
+            if( $.drcd.commonData.slideShow.timer){
+                clearTimeout($.drcd.commonData.slideShow.timer)
+            }
+            $.drcd.commonData.slideShow.timer = setTimeout($.drcd.slideShowInterval, 5000);
+        },
+        slideShowInterval : function(){
+            if($.drcd.commonData.slideShow.currentIndex >= $.drcd.commonData.slideShow.images.length - 1)    {
+                $.drcd.commonData.slideShow.currentIndex = 0;
+            }else{
+                $.drcd.commonData.slideShow.currentIndex++;
+            }
+            $.drcd.slideShowShowSlide();
+            $.drcd.commonData.slideShow.timer = setTimeout($.drcd.slideShowInterval, 10000)
+        },
+
+        slideShowShowSlide: function(){
+            let $slidesContainer = $(".slideshow-container").find(".slideshow-slides-container");
+            let $slide =   $slidesContainer.find(".slideshow-slide");
+            let item = $.drcd.commonData.slideShow.images[$.drcd.commonData.slideShow.currentIndex]            
+            $slide.find(".slideshow-text").text(item.title);
+            $slide.find("img").attr("src", item.img);
+        },
+
+        slideShowUnload: function(){
+            console.log("unloadSlideShow");
+        },
+
         init: function(){
 
             $.drcd.menuItemsLoad();
@@ -78,8 +174,10 @@
                 ioSocket.emit("Coreprotect",{"name":"Connor"})
             })
             
-            if(window.location.href.endsWith(".htm") == true){
-                this.loadPage('home');
+            let pathName = window.location.pathname;
+            if(pathName.startsWith("/page/") == true){
+                let pageIndex = pathName.substring(6);
+                this.loadPage(pageIndex);
             }else{
                 this.loadPage('home');
             }

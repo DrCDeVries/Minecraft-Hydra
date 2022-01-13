@@ -137,9 +137,7 @@ var handlePublicFileRequest = function (req, res) {
 
     if (fs.existsSync(path.join(__dirname, 'public',filePath)) === true) {
         res.sendFile(filePath, { root: path.join(__dirname, 'public') });  
-    }else if(filePath.endsWith(".js.map") == true) {
-        res.sendStatus(404);
-    }else if (filePath.endsWith(".htm") == true) {
+    }else if (filePath.startsWith("/page/") == true || filePath == "/" ) {
         filePath = "/index.htm";
         res.sendFile(filePath, { root: path.join(__dirname, 'public') });
         //res.sendStatus(404);

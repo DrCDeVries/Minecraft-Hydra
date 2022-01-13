@@ -1,91 +1,30 @@
-<script>
-  var slideIndex = 1;
-  showSlides(slideIndex);
-  
-  // Next/previous controls
-  function plusSlides(n) {
-    showSlides(slideIndex += n);
-  }
-  
-  // Thumbnail image controls
-  function currentSlide(n) {
-    showSlides(slideIndex = n);
-  }
-  
-  function showSlides(n) {
-    var i;
-    var slides = document.getElementsByClassName("mySlides");
-    var dots = document.getElementsByClassName("dot");
-    if (n > slides.length) {slideIndex = 1}
-    if (n < 1) {slideIndex = slides.length}
-    for (i = 0; i < slides.length; i++) {
-        slides[i].style.display = "none";
-    }
-    for (i = 0; i < dots.length; i++) {
-        dots[i].className = dots[i].className.replace(" active", "");
-    }
-    slides[slideIndex-1].style.display = "block";
-    dots[slideIndex-1].className += " active";
-  }
-  
-  var slideIndex = 0;
-  showSlides();
-  
-  function showSlides() {
-    var i;
-    var slides = document.getElementsByClassName("mySlides");
-    for (i = 0; i < slides.length; i++) {
-      slides[i].style.display = "none";
-    }
-    slideIndex++;
-    if (slideIndex > slides.length) {slideIndex = 1}
-    slides[slideIndex-1].style.display = "block";
-    setTimeout(showSlides, 10000); // Change image every 5 seconds
-  }
-    </script>
-        <header>
-        <h1>
-          Welcome To Gladius 
-        </h1>
-        <p1>
-         We are a small minecraft community with around 40 active members from around the world.
-         we enjoy building and meeting new friends for information on how to join check whitelisting.
-          </p1>
-        </header>
+
+  <header>
+  <h1>
+    Welcome To Gladius 
+  </h1>
+  <p1>
+    We are a small minecraft community with around 40 active members from around the world.
+    we enjoy building and meeting new friends for information on how to join check whitelisting.
+    </p1>
+  </header>
 
 <!-- Slideshow container -->
 <div class="slideshow-container">
 
-    <!-- Full-width images with number and caption text -->
-    <div class="slideshow-slides slideshow-fade">
-      <div class="numbertext">1 / 3</div>
-      <img src="../images/img1.jpg" style="width:100%">
-      <div class="text">Redstone Farms</div>
+    
+  <div class="slideshow-slides-container" >
+    <div class="slideshow-slide slideshow-fade">
+      <div class="slideshow-numbertext"></div>
+      <img style="width:100%">
+      <div class="slideshow-text"></div>
     </div>
-  
-    <div class="slideshow-slides slideshow-fade">
-      <div class="numbertext">2 / 3</div>
-      <img src="../images/img2.jpg" style="width:100%">
-      <div class="text">Spawn</div>
-    </div>
-  
-    <div class="slideshow-slides slideshow-fade">
-      <div class="numbertext">3 / 3</div>
-      <img src="../images/img3.jpg" style="width:100%">
-      <div class="text">Shoping</div>
-    </div>
-  
-    <!-- Next and previous buttons -->
-    <a class="slideshow-prev" onclick="plusSlides(-1)">&#10094;</a>
-    <a class="slideshow-next" onclick="plusSlides(1)">&#10095;</a>
   </div>
-  <br>
-  
-  <!-- The dots/circles -->
+ 
   <div style="text-align:center">
-    <span class="slideshow-dot" onclick="currentSlide(1)"></span>
-    <span class="slideshow-dot" onclick="currentSlide(2)"></span>
-    <span class="slideshow-dot" onclick="currentSlide(3)"></span>
+    <a class="slideshow-prev" onclick="plusSlides(-1)">&#10094;</a>&nbsp;&nbsp;&nbsp;&nbsp;<a class="slideshow-next" onclick="plusSlides(1)">&#10095;</a>
   </div>
+</div>
+
 
   
