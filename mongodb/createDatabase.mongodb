@@ -1,13 +1,3 @@
-use minecrafthydra
-
-db.createUser(
-{
-   user:"Minecraft-Hydra",
-   pwd:"MinecraftGood",
-   roles: [ { role: "dbOwner", db: "minecrafthydra" }]
-}
-)
-
 
 db.createCollection( "Account")
 db.Account.createIndex( { "uuid": 1 } )

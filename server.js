@@ -16,6 +16,7 @@ const fs = require('fs');
 const { exec } = require("child_process");
 const Logger = require("./logger.js");
 const ioServer = require('socket.io');
+const MongoRestService = require('./mongoRestService');
 
 var defaultOptions = {
     //loaded from the config file
@@ -146,10 +147,23 @@ var handlePublicFileRequest = function (req, res) {
     }
        
 };
-routes.post('/api/connor', function (req, res) {
+
+routes.post('/apitest/connor', function (req, res) {
   console.log(req.body)
 res.json({sucsess:true})
 });
+
+
+const mongoRestService = new MongoRestService(
+    {
+        mongoDbServerUrl: objOptions.mongoDbServerUrl,
+        mongoDbDatabaseName:objOptions.mongoDbDatabaseName,
+        apiRootPath: "/api",
+        appLogger: appLogger
+    }
+)
+mongoRestService.bindRoutes(app);
+
 
 routes.get('/*', function (req, res) {
     handlePublicFileRequest(req, res);

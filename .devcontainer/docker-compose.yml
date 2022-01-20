@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile
       args:
         # [Choice] Node.js version: 16, 14, 12
-        VARIANT: 14
+        VARIANT: 16
         # On Linux, you may need to update USER_UID and USER_GID below if not your local UID is not 1000.
         USER_UID: 1000
         USER_GID: 1000
@@ -15,13 +15,9 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:rw
       - ..:/workspace:cached
-      - mincraft-data:/minecraftdata
-    container_name: nodehydra
-    environment:
-    # Need to make sure the below Vars are also set in the /mongodb/createDatabase.js script as currently there is no way to read environment vars with out spawning shell scripts
-      ME_CONFIG_MONGODB_ADMINUSERNAME: "Minecraft-Hydra"
-      ME_CONFIG_MONGODB_ADMINPASSWORD: "MinecraftGood"
-      ME_CONFIG_MONGODB_URL: "mongodb://Minecraft-Hydra:MinecraftGood!@mongo:27017/"
+      - minecraft-data:/minecraftdata
+    container_name: hydra-node
+    
     # Overrides default command so things don't shut down after the process ends.
     command: sleep infinity
 
@@ -46,7 +42,7 @@ services:
     container_name: hydra_minecraft
     restart: unless-stopped
     volumes:
-      - mincraft-data:/data
+      - minecraft-data:/data
     environment:
       ENABLE_QUERY: "true"
       OPS: "TemporaryWolf"
@@ -57,7 +53,6 @@ services:
       TYPE: "SPIGOT"
       VERSION: "1.16.5"
       MEMORY: "8G"
-    # Add "forwardPorts": ["27017"] to **devcontainer.json** to forward MongoDB locally.
     # (Adding the "ports" property to this file will not forward from a Codespace.)
     ports:
       - "25565:25565"
@@ -72,9 +67,9 @@ services:
       - mongo-data:/data/db
       - ../mongodb/createDatabase.mongodb:/docker-entrypoint-initdb.d/createDatabase.js:ro
     environment:
-      MONGO_INITDB_ROOT_USERNAME: "admin"
-      MONGO_INITDB_ROOT_PASSWORD: "R00tUs3r0nly!"
-      MONGO_INITDB_DATABASE: "admin"
+      MONGO_INITDB_ROOT_USERNAME: "minecrafthydra"
+      MONGO_INITDB_ROOT_PASSWORD: "M1n3craftHydra2022"
+      MONGO_INITDB_DATABASE: "minecrafthydra"
 
     # Add "forwardPorts": ["27017"] to **devcontainer.json** to forward MongoDB locally.
     # (Adding the "ports" property to this file will not forward from a Codespace.)
@@ -85,6 +80,6 @@ services:
 
 volumes: 
   mongo-data:
-  mincraft-data:
+  minecraft-data:
 networks:
   express-mongo:

@@ -2,5 +2,7 @@
     "useHttps" : false,
     "useHttp" : true,
     "httpsport": 49443,
-    "httpport": 49080  
+    "httpport": 49080 ,
+    "mongoDbServerUrl": "mongodb://minecrafthydra:M1n3craftHydra2022@hydra_mongodb:27017",
+    "mongoDbDatabaseName": "minecrafthydra"
 }
