@@ -29,7 +29,11 @@ body{
       position: relative;
       text-align: center;
     }
-    
+    label{
+      color: rgb(255, 255, 255);
+      position: relative;
+    }
+  
     * {box-sizing:border-box}
     
     /* Slideshow container */
@@ -118,7 +122,7 @@ body{
     }
     
     .NameDisplay{
-    color: #ffffff;
+      color: #ffffff;
 
 
     }

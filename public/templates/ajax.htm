@@ -12,6 +12,7 @@
     $(".btnSave").on("click", function(evt){
       let data = {};
       data.name =  $("#name").val();
+      data.username =  $("#username").val();
       $.ajax({
         url:"/api/connor",
         type:"POST",
@@ -37,7 +38,7 @@
   </script>
 
 
-
+  
   <div class="form-group">
     <label id="name-label" for="name">Name</label>
     <input
@@ -49,6 +50,19 @@
       required
     />
 </div>
+
+<div class="form-group">
+  <label id="name-label" for="username">username</label>
+  <input
+    type="text"
+    name="username"
+    id="username"
+    class="form-control"
+    placeholder="Enter your minecraft username"
+    required
+  />
+</div>
+
 <div>
   <button class="btn btn-primary btnSave" >Save</button>
 </div>
