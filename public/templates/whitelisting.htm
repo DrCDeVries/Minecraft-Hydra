@@ -6,12 +6,11 @@
 
   }
   
-  
-    var name = $("#name").val();
+    var data = $("#name").val();
     $.ajax({
       type: "GET",
       url:"/api/connor",
-      data:name,
+      data:data,
       dataType:"text",
       cache: false,
   }).then(
@@ -33,8 +32,8 @@
   </script>
 
 
-<div class="NameDisplay" name='id' id="name">
-<p type="text" id="result">
+<div class="NameDisplay" name='id' id="user">
+<p type="text" id="name">
 </p>
 
 </div>
