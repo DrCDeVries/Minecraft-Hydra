@@ -11,11 +11,14 @@
       type: "GET",
       url:"/api/connor",
       data:data,
-      dataType:"text",
+      dataType:"json",
       cache: false,
   }).then(
         function(data){
-          $("#result").text(data);
+          for (var i=0; i<data.length; i++) {
+            var row = $('<tr><td>' + data[i].name+ '</td><td>'  + data[i].username+  '</td></tr>');
+            $('#name').append(row);
+          }
         },
         function(err){
           showError(err)
@@ -31,9 +34,10 @@
   
   </script>
 
-
-<div class="NameDisplay" name='id' id="user">
-<p type="text" id="result">
-</p>
-
-</div>
+<table class="NameDisplay" id="name">
+  <tr>
+      <th>User</th>
+      <th>Username</th>
+      
+  </tr>
+</table>

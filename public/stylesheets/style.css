@@ -5,7 +5,15 @@ body {
     padding-bottom: 10px;
 }
 
-
+th {
+  background: #66626200;
+  font-weight: bold;
+  padding: 6px;
+}
+td {
+  background: #e4dcdc00;
+  padding: 6px;
+}
 
 .header {
     background-color: white;
@@ -120,11 +128,9 @@ body{
       animation-name: fade;
       animation-duration: 10s;
     }
-    
     .NameDisplay{
       color: #ffffff;
-
-
+      width: 50%;
     }
 
     @-webkit-keyframes fade {
